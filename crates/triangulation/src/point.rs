@@ -157,6 +157,17 @@ pub mod triangulation {
             }
         }
 
+        impl std::ops::Neg for Vector {
+            type Output = Vector;
+
+            fn neg(self) -> Self::Output {
+                Vector {
+                    x: -self.x,
+                    y: -self.y,
+                }
+            }
+        }
+
         #[derive(Debug, Clone)]
         pub struct Segment {
             pub top: Point,
