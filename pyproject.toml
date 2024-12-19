@@ -151,4 +151,4 @@ build = "*64"
 
 [tool.cibuildwheel.linux]
 before-all = "curl https://sh.rustup.rs -sSf | sh -s -- -y"
-environment = { PATH="HOME/.cargo/bin:$PATH" }
+environment = { PATH="$HOME/.cargo/bin:$PATH" }
