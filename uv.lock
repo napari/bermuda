@@ -3,22 +3,22 @@ requires-python = ">=3.9"
 
 [[package]]
 name = "bermuda"
-version = "0.0.0"
+version = "0.1.dev5+gae10ff6.d20241219"
 source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+]
 
 [package.dev-dependencies]
-dev = [
-    { name = "numpy" },
+test = [
     { name = "pytest" },
 ]
 
 [package.metadata]
+requires-dist = [{ name = "numpy", specifier = ">=2.0.2" }]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "numpy", specifier = ">=2.0.2" },
-    { name = "pytest", specifier = ">=8.3.4" },
-]
+test = [{ name = "pytest", specifier = ">=8.3.4" }]
 
 [[package]]
 name = "colorama"

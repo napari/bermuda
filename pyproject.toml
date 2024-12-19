@@ -23,7 +23,14 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
-dependencies = []
+dependencies = [
+    "numpy>=2.0.2",
+]
+
+[tool.setuptools_scm]
+write_to = "python/bermuda/_version.py"
+
+
 
 [tool.setuptools.packages]
 # Pure Python packages/modules
@@ -34,8 +41,7 @@ target="bermuda._bermuda"
 path="crates/bermuda/Cargo.toml"
 
 [dependency-groups]
-dev = [
-    "numpy>=2.0.2",
+test = [
     "pytest>=8.3.4",
 ]
 
@@ -135,3 +141,10 @@ ban-relative-imports = "all"
 [tool.ruff.lint.isort]
 known-first-party=['napari']
 combine-as-imports = true
+
+
+[tool.cibuildwheel]
+test-command = "pytest tests"
+test-groups = ["test", "qt"]
+skip = "pp*macos* pp31* pp39-manylinux*"
+build = "*64"
