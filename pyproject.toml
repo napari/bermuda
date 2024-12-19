@@ -144,7 +144,7 @@ combine-as-imports = true
 
 
 [tool.cibuildwheel]
-test-command = "pytest tests"
+test-command = "pytest {project}/tests"
 test-groups = ["test"]
 skip = "pp*macos* pp31* pp39-manylinux*"
 build = "*64"
