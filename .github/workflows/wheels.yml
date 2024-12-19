@@ -30,17 +30,12 @@ jobs:
         name: Install Python ${{ matrix.python_version }}
         with:
           python-version: ${{ matrix.python_version }}
-      - name: install openblas
-        if: runner.os == 'macOS'
-        run: brew install libomp
-      - name: Install tox
-        run: pip install tox numpy tox-gh-actions
-      - name: Test Backend
-        run: OPENBLAS="$(brew --prefix openblas)" OMP="$(brew --prefix libomp)" tox
-        if: runner.os == 'macOS'
-      - name: Test Backend
-        run: tox
-        if: runner.os != 'macOS'
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: run test
+        run: uv run --group test pytest
 
   build_wheels:
     needs: test
