@@ -23,7 +23,7 @@ fn triangulate_path_edge<'py>(
         .collect();
 
     // Call the re-exported Rust function directly
-    let result = triangulate_path_edge_rust(&path, closed, 0.1, bevel);
+    let result = triangulate_path_edge_rust(&path, closed, 3.0, bevel);
     let triangle_data: Vec<Vec<u32>> = result
         .triangles
         .iter()

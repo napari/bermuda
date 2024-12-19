@@ -1,5 +1,6 @@
-pub mod triangulation {
     pub mod triangulation {
+    pub mod triangulation {
+        use pyo3::pyclass::boolean_struct::False;
         use crate::point::triangulation::point;
 
         #[derive(Debug)]
@@ -65,7 +66,7 @@ pub mod triangulation {
                 mitter = point::Vector::new(p1_p2_diff_norm.y / 2.0, -p1_p2_diff_norm.x / 2.0);
             } else {
                 let mut scale_factor = 1.0 / sin_angle;
-                if bevel || cos_angle < cos_limit as f32 {
+                if bevel || cos_angle < cos_limit {
                     // Compute bevel join and handle limits for inner vector length
                     let (sign, mag) = sign_abs(scale_factor);
                     scale_factor = sign * 0.5 * mag.min(prev_length.min(length));
