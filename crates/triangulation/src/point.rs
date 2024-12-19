@@ -5,6 +5,7 @@ pub mod triangulation {
         use std::hash::{Hash, Hasher};
 
         pub(crate) type Coord = f32;
+        pub(crate) type Index = usize;
         #[derive(Debug, Clone, Copy)]
         pub struct Point {
             pub x: Coord,
@@ -273,13 +274,13 @@ pub mod triangulation {
 
         #[derive(Debug, Clone)]
         pub struct Triangle {
-            pub x: usize,
-            pub y: usize,
-            pub z: usize,
+            pub x: Index,
+            pub y: Index,
+            pub z: Index,
         }
 
         impl Triangle {
-            pub fn new(x: usize, y: usize, z: usize) -> Self {
+            pub fn new(x: Index, y: Index, z: Index) -> Self {
                 Triangle { x, y, z }
             }
         }

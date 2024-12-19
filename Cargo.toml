@@ -14,3 +14,7 @@ repository = "https://github.com/napari/bermuda.git"
 triangulation = { path = "crates/triangulation" }
 pyo3 = { version = "0.23.3", features = ["extension-module"] }
 numpy = "0.23"
+
+
+[workspace.lints.rust]
+unsafe_code = "warn"

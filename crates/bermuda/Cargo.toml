@@ -14,5 +14,5 @@ numpy = { workspace = true }
 triangulation = { workspace = true }
 
 [lib]
-name = "bermuda"
+name = "_bermuda"
 crate-type = ["cdylib"]
