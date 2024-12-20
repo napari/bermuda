@@ -3,6 +3,11 @@ exclude: |
     .*/(snapshots)/.*|
   )$
 
+ci:
+  skip:
+    - cargo-fmt
+    - cargo-dev-generate-all
+
 repos:
   - repo: https://github.com/abravalheri/validate-pyproject
     rev: v0.23
