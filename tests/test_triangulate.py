@@ -150,3 +150,9 @@ def test_triangulate_path_edge_py(
     assert triangles.shape[0] == expected - 2
     triangles_li = [[int(y) for y in x] for x in triangles]
     assert triangles_li == exp_triangles
+    # Verify no NaN values
+    assert not np.isnan(centers).any(), 'Centers contain NaN values'
+    assert not np.isnan(offsets).any(), 'Offsets contain NaN values'
+    # Verify triangle indices are valid
+    assert np.all(triangles >= 0), 'Invalid triangle indices'
+    assert np.all(triangles < centers.shape[0]), 'Invalid triangle indices'

@@ -57,7 +57,7 @@ fn triangulate_path_edge<'py>(
         .iter()
         .map(|t| vec![t.x as u32, t.y as u32, t.z as u32])
         .collect();
-    
+
     // Convert back to numpy array ((M-2)x3) if triangles is not empty, otherwise create empty array (0x3).
     let triangle_array = if !result.triangles.is_empty() {
         PyArray2::<u32>::from_vec2(py, &triangle_data)?
