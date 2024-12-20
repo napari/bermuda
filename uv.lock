@@ -3,7 +3,7 @@ requires-python = ">=3.9"
 
 [[package]]
 name = "bermuda"
-version = "0.1.dev5+gae10ff6.d20241219"
+version = "0.1.dev14+gcfe8bdb.d20241220"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
@@ -15,7 +15,7 @@ test = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "numpy", specifier = ">=2.0.2" }]
+requires-dist = [{ name = "numpy", specifier = ">=1.22.2" }]
 
 [package.metadata.requires-dev]
 test = [{ name = "pytest", specifier = ">=8.3.4" }]

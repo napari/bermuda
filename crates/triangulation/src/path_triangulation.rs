@@ -1,6 +1,5 @@
+pub mod triangulation {
     pub mod triangulation {
-    pub mod triangulation {
-        use pyo3::pyclass::boolean_struct::False;
         use crate::point::triangulation::point;
 
         #[derive(Debug)]

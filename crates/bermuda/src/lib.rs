@@ -5,6 +5,35 @@ use triangulation::{
     triangulate_path_edge as triangulate_path_edge_rust, PathTriangulation, Point,
 };
 
+/// triangulate_path_edge(path: np.ndarray, closed: bool, bevel: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]
+/// --
+///
+/// Determines the triangulation of a path in 2D
+///
+/// Parameters
+/// ----------
+///path : np.ndarray
+///     Nx2 array of central coordinates of path to be triangulated
+/// closed : bool
+///     Bool which determines if the path is closed or not
+/// limit : float
+///     Miter limit which determines when to switch from a miter join to a
+///     bevel join
+/// bevel : bool
+///     Bool which if True causes a bevel join to always be used. If False
+///     a bevel join will only be used when the miter limit is exceeded
+//
+/// Returns
+/// -------
+/// centers : np.ndarray
+///     Mx2 array central coordinates of path triangles.
+/// offsets : np.ndarray
+///     Mx2 array of the offsets to the central coordinates that need to
+///     be scaled by the line width and then added to the centers to
+///     generate the actual vertices of the triangulation
+/// triangles : np.ndarray
+///     (M-2)x3 array of the indices of the vertices that will form the
+///     triangles of the triangulation
 #[pyfunction]
 fn triangulate_path_edge<'py>(
     py: Python<'_>,
