@@ -39,6 +39,7 @@ fn triangulate_path_edge<'py>(
     limit: f32,
     bevel: bool,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>)> {
+    // Convert the numpy array into a rust compatible representations which is a vector of points.
     let path_: Vec<Point> = path
         .as_array()
         .rows()
@@ -56,6 +57,8 @@ fn triangulate_path_edge<'py>(
         .iter()
         .map(|t| vec![t.x as u32, t.y as u32, t.z as u32])
         .collect();
+    
+    // Convert back to numpy array ((M-2)x3) if triangles is not empty, otherwise create empty array (0x3).
     let triangle_array = if !result.triangles.is_empty() {
         PyArray2::<u32>::from_vec2(py, &triangle_data)?
     } else {
