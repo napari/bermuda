@@ -5,9 +5,6 @@ use triangulation::{
     triangulate_path_edge as triangulate_path_edge_rust, PathTriangulation, Point,
 };
 
-/// triangulate_path_edge(path: np.ndarray, closed: bool, bevel: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]
-/// --
-///
 /// Determines the triangulation of a path in 2D
 ///
 /// Parameters
@@ -37,11 +34,12 @@ use triangulation::{
 #[pyfunction]
 fn triangulate_path_edge<'py>(
     py: Python<'_>,
-    x: PyReadonlyArray2<'_, f32>,
+    path: PyReadonlyArray2<'_, f32>,
     closed: bool,
+    limit: f32,
     bevel: bool,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>)> {
-    let path: Vec<Point> = x
+    let path_: Vec<Point> = path
         .as_array()
         .rows()
         .into_iter()
@@ -52,7 +50,7 @@ fn triangulate_path_edge<'py>(
         .collect();
 
     // Call the re-exported Rust function directly
-    let result = triangulate_path_edge_rust(&path, closed, 3.0, bevel);
+    let result = triangulate_path_edge_rust(&path_, closed, limit, bevel);
     let triangle_data: Vec<Vec<u32>> = result
         .triangles
         .iter()

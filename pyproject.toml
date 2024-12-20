@@ -44,7 +44,13 @@ path="crates/bermuda/Cargo.toml"
 test = [
     "pytest>=8.3.4",
 ]
+dev = [
+    "ipython>=8.18.1",
+    {include-group = "test"}
+]
 
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "**/*.rs" }]
 
 [tool.ruff]
 line-length = 79

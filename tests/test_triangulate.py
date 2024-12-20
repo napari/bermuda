@@ -143,7 +143,7 @@ def test_triangulate_path_edge_py(
     path, closed, bevel, expected, exp_triangles
 ):
     centers, offsets, triangles = triangulate_path_edge(
-        np.array(path, dtype='float32'), closed=closed, bevel=bevel
+        np.array(path, dtype='float32'), limit=3, closed=closed, bevel=bevel
     )
     assert centers.shape == offsets.shape
     assert centers.shape[0] == expected
