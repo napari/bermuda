@@ -1,4 +1,4 @@
-use numpy::{IntoPyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, ToPyArray};
+use numpy::{IntoPyArray, PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, ToPyArray};
 use pyo3::prelude::*;
 
 use triangulation::{
@@ -52,25 +52,40 @@ fn triangulate_path_edge<'py>(
 
     // Call the re-exported Rust function directly
     let result = triangulate_path_edge_rust(&path_, closed, limit, bevel);
-    let triangle_data: Vec<Vec<u32>> = result
+    let triangle_data: Vec<u32> = result
         .triangles
         .iter()
-        .map(|t| vec![t.x as u32, t.y as u32, t.z as u32])
+        .map(|t| [t.x as u32, t.y as u32, t.z as u32])
+        .flatten()
         .collect();
 
     // Convert back to numpy array ((M-2)x3) if triangles is not empty, otherwise create empty array (0x3).
     let triangle_array = if !result.triangles.is_empty() {
-        PyArray2::<u32>::from_vec2(py, &triangle_data)?
+        PyArray::from_vec(py, triangle_data).reshape([result.triangles.len(), 3])?
     } else {
         PyArray2::<u32>::zeros(py, [0, 3], false)
     };
 
-    let centers: Vec<Vec<f32>> = result.centers.iter().map(|p| vec![p.x, p.y]).collect();
-    let offsets: Vec<Vec<f32>> = result.offsets.iter().map(|p| vec![p.x, p.y]).collect();
+    let flat_centers: Vec<f32> = result
+        .centers
+        .iter()
+        .map(|p| [p.x, p.y])
+        .flatten()
+        .collect();
+    let flat_offsets: Vec<f32> = result
+        .offsets
+        .iter()
+        .map(|v| [v.x, v.y])
+        .flatten()
+        .collect();
 
     Ok((
-        PyArray2::<f32>::from_vec2(py, &centers)?.into(),
-        PyArray2::<f32>::from_vec2(py, &offsets)?.into(),
+        PyArray::from_vec(py, flat_centers)
+            .reshape([result.centers.len(), 2])?
+            .into(),
+        PyArray::from_vec(py, flat_offsets)
+            .reshape([result.offsets.len(), 2])?
+            .into(),
         triangle_array.into(),
     ))
 }
