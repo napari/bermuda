@@ -11,12 +11,12 @@ use triangulation::{
 /// ----------
 ///path : np.ndarray
 ///     Nx2 array of central coordinates of path to be triangulated
-/// closed : bool
+/// closed : bool, optional (default=False)
 ///     Bool which determines if the path is closed or not
-/// limit : float
+/// limit : float, optional (default=3.0)
 ///     Miter limit which determines when to switch from a miter join to a
 ///     bevel join
-/// bevel : bool
+/// bevel : bool, optional (default=False)
 ///     Bool which if True causes a bevel join to always be used. If False
 ///     a bevel join will only be used when the miter limit is exceeded
 //
