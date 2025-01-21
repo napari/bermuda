@@ -187,3 +187,13 @@ def test_default_values_keyword_order():
         closed=True,
     )
     assert len(triangles) == 12
+
+
+def test_change_limit():
+    centers, offsets, triangles = triangulate_path_edge(
+        np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'),
+        bevel=False,
+        closed=True,
+        limit=0.5,
+    )
+    assert len(triangles) == 12
