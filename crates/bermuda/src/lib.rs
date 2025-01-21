@@ -35,9 +35,9 @@ use triangulation::{
 fn triangulate_path_edge<'py>(
     py: Python<'_>,
     path: PyReadonlyArray2<'_, f32>,
-    closed: bool,
-    limit: f32,
-    bevel: bool,
+    closed: Option<bool>,
+    limit: Option<f32>,
+    bevel: Option<bool>,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>)> {
     // Convert the numpy array into a rust compatible representations which is a vector of points.
     let path_: Vec<Point> = path
@@ -51,7 +51,12 @@ fn triangulate_path_edge<'py>(
         .collect();
 
     // Call the re-exported Rust function directly
-    let result = triangulate_path_edge_rust(&path_, closed, limit, bevel);
+    let result = triangulate_path_edge_rust(
+        &path_,
+        closed.unwrap_or(false),
+        limit.unwrap_or(3.0),
+        bevel.unwrap_or(false),
+    );
     let triangle_data: Vec<u32> = result
         .triangles
         .iter()
