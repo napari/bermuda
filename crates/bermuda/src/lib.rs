@@ -1,9 +1,7 @@
-use numpy::{IntoPyArray, PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, ToPyArray};
+use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
-use triangulation::{
-    triangulate_path_edge as triangulate_path_edge_rust, PathTriangulation, Point,
-};
+use triangulation::{triangulate_path_edge as triangulate_path_edge_rust, Point};
 
 /// Determines the triangulation of a path in 2D
 ///
@@ -32,6 +30,7 @@ use triangulation::{
 ///     (M-2)x3 array of the indices of the vertices that will form the
 ///     triangles of the triangulation
 #[pyfunction]
+#[pyo3(signature = (path, closed=false, limit=3.0, bevel=false))]
 fn triangulate_path_edge<'py>(
     py: Python<'_>,
     path: PyReadonlyArray2<'_, f32>,
