@@ -50,8 +50,17 @@ jobs:
       - name: run test
         run: uv run --group test pytest
 
+  cargo-test:
+    name: Run cargo tests
+    needs: pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run tests
+        run: cargo tests
+
   build_wheels:
-    needs: test
+    needs: [test, cargo-test]
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:

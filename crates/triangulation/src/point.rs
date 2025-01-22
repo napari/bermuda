@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 
 pub(crate) type Coord = f32;
 pub(crate) type Index = usize;
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
     pub x: Coord,
     pub y: Coord,
@@ -34,12 +34,6 @@ impl Point {
             x: self.x + vector.x,
             y: self.y + vector.y,
         }
-    }
-}
-
-impl PartialEq for Point {
-    fn eq(&self, other: &Self) -> bool {
-        self.x == other.x && self.y == other.y
     }
 }
 

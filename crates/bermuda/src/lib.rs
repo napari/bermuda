@@ -1,9 +1,7 @@
-use numpy::{IntoPyArray, PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, ToPyArray};
+use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
-use triangulation::{
-    triangulate_path_edge as triangulate_path_edge_rust, PathTriangulation, Point,
-};
+use triangulation::{triangulate_path_edge as triangulate_path_edge_rust, Point};
 
 /// Determines the triangulation of a path in 2D
 ///
