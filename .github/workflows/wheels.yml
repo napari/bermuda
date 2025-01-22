@@ -57,7 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: run tests
-        run: cargo tests
+        run: cargo test
 
   build_wheels:
     needs: [test, cargo-test]
