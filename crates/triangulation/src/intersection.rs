@@ -72,3 +72,15 @@ pub fn on_segment_if_collinear(p: point::Point, q: point::Point, r: point::Point
         false
     }
 }
+
+pub fn orientation(p: point::Point, q: point::Point, r: point::Point) -> i32 {
+    let val1 = (q.y - p.y) * (r.x - q.x);
+    let val2 = (r.y - q.y) * (q.x - p.x);
+    if val1 == val2 {
+        0
+    } else if val1 > val2 {
+        1
+    } else {
+        2
+    }
+}
