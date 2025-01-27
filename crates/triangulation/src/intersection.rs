@@ -40,9 +40,9 @@ impl Ord for Event {
 ///
 /// # Arguments
 ///
-/// * `p` - A [`Point`](crate::point::Point) representing one endpoint of the segment.
-/// * `q` - A [`Point`](crate::point::Point) to check if it lies on the segment.
-/// * `r` - A [`Point`](crate::point::Point) representing the other endpoint of the segment.
+/// * `p` - A [`Point`](point::Point) representing one endpoint of the segment.
+/// * `q` - A [`Point`](point::Point) to check if it lies on the segment.
+/// * `r` - A [`Point`](point::Point) representing the other endpoint of the segment.
 ///
 /// # Returns
 ///
@@ -84,9 +84,9 @@ pub fn on_segment_if_collinear(p: point::Point, q: point::Point, r: point::Point
 ///
 /// # Arguments
 ///
-/// * `p` - The first [`Point`](crate::point::Point).
-/// * `q` - The second [`Point`](crate::point::Point).
-/// * `r` - The third [`Point`](crate::point::Point).
+/// * `p` - The first [`Point`](point::Point).
+/// * `q` - The second [`Point`](point::Point).
+/// * `r` - The third [`Point`](point::Point).
 ///
 /// # Returns
 ///
@@ -130,8 +130,8 @@ pub fn orientation(p: point::Point, q: point::Point, r: point::Point) -> i32 {
 ///
 /// # Arguments
 ///
-/// * `s1` - A reference to the first [`Segment`](crate::point::Segment).
-/// * `s2` - A reference to the second [`Segment`](crate::point::Segment).
+/// * `s1` - A reference to the first [`Segment`](point::Segment).
+/// * `s2` - A reference to the second [`Segment`](point::Segment).
 ///
 /// # Returns
 ///
