@@ -156,3 +156,44 @@ def test_triangulate_path_edge_py(
     # Verify triangle indices are valid
     assert np.all(triangles >= 0), 'Invalid triangle indices'
     assert np.all(triangles < centers.shape[0]), 'Invalid triangle indices'
+
+
+def test_default_values():
+    centers, offsets, triangles = triangulate_path_edge(
+        np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32')
+    )
+    assert len(triangles) == 6
+
+
+def test_default_values_closed():
+    centers, offsets, triangles = triangulate_path_edge(
+        np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'), True
+    )
+    assert len(triangles) == 8
+
+
+def test_default_values_closed_keyword():
+    centers, offsets, triangles = triangulate_path_edge(
+        np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'),
+        closed=True,
+    )
+    assert len(triangles) == 8
+
+
+def test_default_values_keyword_order():
+    centers, offsets, triangles = triangulate_path_edge(
+        np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'),
+        bevel=True,
+        closed=True,
+    )
+    assert len(triangles) == 12
+
+
+def test_change_limit():
+    centers, offsets, triangles = triangulate_path_edge(
+        np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'),
+        bevel=False,
+        closed=True,
+        limit=0.5,
+    )
+    assert len(triangles) == 12
