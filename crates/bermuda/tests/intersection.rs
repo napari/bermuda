@@ -10,6 +10,14 @@ use triangulation::point::{Point, Segment};
 #[case(Point::new_i(0, 0), Point::new_i(1, 1), Point::new(0.5, 0.5), false)]
 #[case(Point::new_i(0, 0), Point::new_i(0, 1), Point::new(0.0, 0.5), false)]
 #[case(Point::new_i(0, 0), Point::new_i(1, 0), Point::new(0.5, 0.0), false)]
+#[case(Point::new(1e6, 1e6), Point::new(2e6, 2e6), Point::new(3e6, 3e6), true)]
+#[case(
+    Point::new(0.0, 0.0),
+    Point::new(0.0001, 0.0001),
+    Point::new(0.0002, 0.0002),
+    true
+)]
+#[case(Point::new(-1.0, -1.0), Point::new(-2.0, -2.0), Point::new(-3.0, -3.0), true)]
 fn test_on_segment_if_collinear(
     #[case] p: Point,
     #[case] q: Point,
@@ -20,11 +28,14 @@ fn test_on_segment_if_collinear(
 }
 
 #[rstest]
-#[case(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(0.0, 2.0), 0)]
-#[case(Point::new(0.0, 0.0), Point::new(0.0, 2.0), Point::new(0.0, 1.0), 0)]
-#[case(Point::new(0.0, 2.0), Point::new(0.0, 0.0), Point::new(0.0, 1.0), 0)]
-#[case(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(1.0, 2.0), 1)]
-#[case(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(-1.0, 2.0), 2)]
+#[case::colinear_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(0.0, 2.0), 0)]
+#[case::colinear_2(Point::new(0.0, 0.0), Point::new(0.0, 2.0), Point::new(0.0, 1.0), 0)]
+#[case::colinear_3(Point::new(0.0, 2.0), Point::new(0.0, 0.0), Point::new(0.0, 1.0), 0)]
+#[case::clockwise_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(1.0, 2.0), 1)]
+#[case::counter_clockwise_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(-1.0, 2.0), 2)]
+#[case::counter_clockwise_2(Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), 2)] // Right angle
+#[case::colinear_4(Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(1.0, -1.0), 0)] // Same x, not collinear
+#[case::counter_clockwise_precision(Point::new(0.0, 0.0), Point::new(0.0001, 0.0001), Point::new(-0.0001, 0.0001), 2)] // Precision case1
 fn test_orientation(#[case] p: Point, #[case] q: Point, #[case] r: Point, #[case] expected: i32) {
     assert_eq!(intersection::orientation(p, q, r), expected);
 }
@@ -73,6 +84,9 @@ fn test_do_intersect_parallel_segments() {
 #[case(Segment::new_i((0, 0), (2, 2)), Segment::new_i((2, 0), (0, 2)), Point::new_i(1, 1))]
 #[case(Segment::new_i((0, 0), (1, 0)), Segment::new_i((0, 1), (0, 0)), Point::new_i(0, 0))]
 #[case(Segment::new_i((0, 0), (2, 0)), Segment::new_i((1, 0), (1, 2)), Point::new_i(1, 0))]
+#[case(Segment::new_f((0.0, 0.0), (2.0, 2.0)), Segment::new_f((2.0, 0.0), (0.0, 2.0)), Point::new(1.0, 1.0))]
+#[case(Segment::new_f((0.0, 0.0), (1.0, 1.0)), Segment::new_f((0.99, 0.0), (0.0, 0.99)), Point::new(0.495, 0.495))]
+#[case(Segment::new_f((1e6, 1e6), (2e6, 2e6)), Segment::new_f((2e6, 1e6), (1e6, 2e6)), Point::new(1.5e6, 1.5e6))]
 fn test_find_intersection_point(#[case] s1: Segment, #[case] s2: Segment, #[case] expected: Point) {
     assert_eq!(intersection::find_intersection(&s1, &s2)[0], expected);
     assert_eq!(intersection::find_intersection(&s2, &s1)[0], expected);
@@ -96,6 +110,9 @@ fn test_find_intersection_collinear_segments() {
     );
 }
 
+/// Tests a simple square configuration with no intersections.
+/// Each segment connects to the next at endpoints, but there
+/// are no true intersections between non-adjacent segments.
 ///  (1, 0) --- (1, 1)
 ///   |           |
 /// (0, 0) --- (0, 1)
@@ -111,6 +128,10 @@ fn test_find_intersections_1() {
     assert!(intersections.is_empty());
 }
 
+/// Tests a configuration with two intersecting diagonals.
+/// Expected behavior:
+/// - Only one intersection is recorded between segments 1 and 3
+/// - The intersection occurs at (0.5, 0.5)
 ///     (1, 0) --- (1, 1)
 ///         \     /
 ///          \   /
