@@ -6,24 +6,9 @@ use triangulation::point::{Point, Segment};
 #[case(Point::new(0.0, 0.0), Point::new(0.5, 0.5), Point::new(1.0, 1.0), true)]
 #[case(Point::new(0.0, 0.0), Point::new(0.0, 0.5), Point::new(0.0, 1.0), true)]
 #[case(Point::new(0.0, 0.0), Point::new(0.5, 0.0), Point::new(1.0, 0.0), true)]
-#[case(
-    Point::new(0.0, 0.0),
-    Point::new(1.0, 1.0),
-    Point::new(0.5, 0.5),
-    false
-)]
-#[case(
-    Point::new(0.0, 0.0),
-    Point::new(0.0, 1.0),
-    Point::new(0.0, 0.5),
-    false
-)]
-#[case(
-    Point::new(0.0, 0.0),
-    Point::new(1.0, 0.0),
-    Point::new(0.5, 0.0),
-    false
-)]
+#[case(Point::new_i(0, 0), Point::new_i(1, 1), Point::new(0.5, 0.5), false)]
+#[case(Point::new_i(0, 0), Point::new_i(0, 1), Point::new(0.0, 0.5), false)]
+#[case(Point::new_i(0, 0), Point::new_i(1, 0), Point::new(0.5, 0.0), false)]
 fn test_on_segment_if_collinear(
     #[case] p: Point,
     #[case] q: Point,
