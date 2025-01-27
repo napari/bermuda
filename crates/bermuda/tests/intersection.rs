@@ -67,3 +67,30 @@ fn test_do_intersect_parallel_segments() {
         true
     )
 }
+
+#[rstest]
+#[case(Segment::new_i((0, 0), (2, 2)), Segment::new_i((2, 0), (0, 2)), Point::new_i(1, 1))]
+#[case(Segment::new_i((0, 0), (1, 0)), Segment::new_i((0, 1), (0, 0)), Point::new_i(0, 0))]
+#[case(Segment::new_i((0, 0), (2, 0)), Segment::new_i((1, 0), (1, 2)), Point::new_i(1, 0))]
+fn test_find_intersection_point(#[case] s1: Segment, #[case] s2: Segment, #[case] expected: Point) {
+    assert_eq!(intersection::find_intersection(&s1, &s2)[0], expected);
+    assert_eq!(intersection::find_intersection(&s2, &s1)[0], expected);
+}
+
+#[rstest]
+fn test_find_intersection_collinear_segments() {
+    assert_eq!(
+        intersection::find_intersection(
+            &Segment::new_i((0, 0), (2, 0)),
+            &Segment::new_i((1, 0), (3, 0))
+        )[0],
+        Point::new_i(1, 0)
+    );
+    assert_eq!(
+        intersection::find_intersection(
+            &Segment::new_i((0, 0), (2, 0)),
+            &Segment::new_i((1, 0), (3, 0))
+        )[1],
+        Point::new_i(2, 0)
+    );
+}
