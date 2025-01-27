@@ -189,6 +189,14 @@ impl Segment {
         }
     }
 
+    pub fn new_i(p1: (i32, i32), p2: (i32, i32)) -> Self {
+        Self::new(Point::new_i(p1.0, p1.1), Point::new_i(p2.0, p2.1))
+    }
+
+    pub fn new_f(p1: (f32, f32), p2: (f32, f32)) -> Self {
+        Self::new(Point::new(p1.0, p1.1), Point::new(p2.0, p2.1))
+    }
+
     pub fn is_horizontal(&self) -> bool {
         self.bottom.y == self.top.y
     }

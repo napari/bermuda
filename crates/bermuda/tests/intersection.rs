@@ -52,6 +52,27 @@ fn test_do_intersect_crossing_segments() {
 }
 
 #[rstest]
+#[case(Segment::new_i((0, 0), (1, 1)), Segment::new_i((1, 0), (0, 1)))]
+#[case(Segment::new_i((1, 0), (0, 1)), Segment::new_i((0, 0), (1, 1)))]
+#[case(Segment::new_i((0, 0), (0, 1)), Segment::new_i((0, 1), (1, 1)))]
+#[case(Segment::new_i((0, 0), (0, 1)), Segment::new_i((1, 1), (0, 1)))]
+#[case(Segment::new_i((0, 0), (0, 1)), Segment::new_i((0, 0), (1, 1)))]
+#[case(Segment::new_i((0, 0), (0, 1)), Segment::new_i((1, 1), (0, 0)))]
+#[case(Segment::new_i((0, 0), (0, 1)), Segment::new_f((0.0, 0.5), (1.0, 1.0)))]
+#[case(Segment::new_i((0, 0), (0, 1)), Segment::new_f((1.0, 1.0), (0.0, 0.5)))]
+fn test_do_intersect(#[case] s1: Segment, #[case] s2: Segment) {
+    assert!(intersection::do_intersect(&s1, &s2));
+}
+
+#[rstest]
+#[case(Segment::new_i((0, 0), (0, 1)), Segment::new_i((1, 2), (-1, 2)))]
+#[case(Segment::new_i((0, 0), (1, 0)), Segment::new_i((2, 1), (2, -1)))]
+#[case(Segment::new_i((0, 0), (1, 1)), Segment::new_i((1, 2), (0, 1)))]
+fn test_do_intersect_ne(#[case] s1: Segment, #[case] s2: Segment) {
+    assert!(!intersection::do_intersect(&s1, &s2));
+}
+
+#[rstest]
 fn test_do_intersect_parallel_segments() {
     assert_ne!(
         intersection::do_intersect(
