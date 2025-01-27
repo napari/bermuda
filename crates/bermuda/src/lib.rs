@@ -1,9 +1,7 @@
-use numpy::{IntoPyArray, PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, ToPyArray};
+use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
-use triangulation::{
-    triangulate_path_edge as triangulate_path_edge_rust, PathTriangulation, Point,
-};
+use triangulation::{triangulate_path_edge as triangulate_path_edge_rust, Point};
 
 /// Determines the triangulation of a path in 2D
 ///
@@ -11,12 +9,12 @@ use triangulation::{
 /// ----------
 ///path : np.ndarray
 ///     Nx2 array of central coordinates of path to be triangulated
-/// closed : bool
+/// closed : bool, optional (default=False)
 ///     Bool which determines if the path is closed or not
-/// limit : float
+/// limit : float, optional (default=3.0)
 ///     Miter limit which determines when to switch from a miter join to a
 ///     bevel join
-/// bevel : bool
+/// bevel : bool, optional (default=False)
 ///     Bool which if True causes a bevel join to always be used. If False
 ///     a bevel join will only be used when the miter limit is exceeded
 //
@@ -32,12 +30,13 @@ use triangulation::{
 ///     (M-2)x3 array of the indices of the vertices that will form the
 ///     triangles of the triangulation
 #[pyfunction]
+#[pyo3(signature = (path, closed=false, limit=3.0, bevel=false))]
 fn triangulate_path_edge<'py>(
     py: Python<'_>,
     path: PyReadonlyArray2<'_, f32>,
-    closed: bool,
-    limit: f32,
-    bevel: bool,
+    closed: Option<bool>,
+    limit: Option<f32>,
+    bevel: Option<bool>,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>)> {
     // Convert the numpy array into a rust compatible representations which is a vector of points.
     let path_: Vec<Point> = path
@@ -51,7 +50,12 @@ fn triangulate_path_edge<'py>(
         .collect();
 
     // Call the re-exported Rust function directly
-    let result = triangulate_path_edge_rust(&path_, closed, limit, bevel);
+    let result = triangulate_path_edge_rust(
+        &path_,
+        closed.unwrap_or(false),
+        limit.unwrap_or(3.0),
+        bevel.unwrap_or(false),
+    );
     let triangle_data: Vec<u32> = result
         .triangles
         .iter()
