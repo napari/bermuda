@@ -1,5 +1,7 @@
 use crate::point;
 use std::cmp::Ordering;
+use std::collections::{BTreeMap, HashSet};
+use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Event {
@@ -33,6 +35,32 @@ impl Ord for Event {
             // Assuming Point implements PartialOrd
             self.p.cmp(&other.p)
         }
+    }
+}
+
+#[derive(Default, Clone)]
+struct EventData {
+    tops: Vec<usize>,
+    bottoms: Vec<usize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OrderedPair(point::Index, point::Index);
+
+impl PartialOrd for OrderedPair {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for OrderedPair {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.0.min(self.1), self.0.max(self.1)).cmp(&(other.0.min(other.1), other.0.max(other.1)))
+    }
+}
+
+impl OrderedPair {
+    pub fn new(i1: usize, i2: usize) -> Self {
+        OrderedPair(i1.min(i2), i1.max(i2))
     }
 }
 
@@ -305,4 +333,92 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Vec<point:
     let x = s1.top.x + t * b1;
     let y = s1.top.y + t * (-a1);
     vec![point::Point { x, y }]
+}
+
+/// Finds intersections among a set of line segments.
+///
+/// This function takes a vector of line segments and returns a set of pairs of
+/// segment indices that intersect. The pairs are ordered to ensure uniqueness
+/// regardless of the order of segments in the input vector.
+///
+/// # Arguments
+///
+/// * `segments` - A vector of [`Segment`](point::Segment) representing the line segments.
+///
+/// # Returns
+///
+/// A [`HashSet`](HashSet) of [`OrderedPair`], where each `OrderedPair` contains the indices of two intersecting segments.
+///
+/// # Example
+///
+/// ```
+/// use triangulation::point::{Point, Segment};
+/// use triangulation::intersection::{find_intersections, OrderedPair};
+/// use std::collections::HashSet;
+///
+/// let segments = vec![
+///     Segment::new(Point::new(0.0, 0.0), Point::new(2.0, 2.0)),
+///     Segment::new(Point::new(0.0, 2.0), Point::new(2.0, 0.0)),
+/// ];
+/// let intersections = find_intersections(&segments);
+///
+/// let expected_intersections: HashSet<OrderedPair> = [(0, 1)].iter().map(|&(a, b)| OrderedPair::new(a, b)).collect();
+/// assert_eq!(intersections, expected_intersections);
+/// ```
+pub fn find_intersections(segments: &[point::Segment]) -> HashSet<OrderedPair> {
+    let mut intersections = HashSet::new();
+    let mut intersection_events: BTreeMap<point::Point, EventData> = BTreeMap::new();
+    for (i, segment) in segments.iter().enumerate() {
+        intersection_events
+            .entry(segment.top)
+            .or_default()
+            .tops
+            .push(i);
+        intersection_events
+            .entry(segment.bottom)
+            .or_default()
+            .bottoms
+            .push(i);
+    }
+
+    let mut active: BTreeMap<point::Point, HashSet<point::Index>> = BTreeMap::new();
+
+    while !intersection_events.is_empty() {
+        let (point, event_data) = intersection_events.iter().next_back().unwrap();
+        let point = point.clone();
+        let event_data = event_data.clone();
+
+        if !event_data.tops.is_empty() {
+            for active_el in active.iter() {
+                for &event_index in &event_data.tops {
+                    for &index in active_el.1 {
+                        if do_intersect(&segments[event_index], &segments[index])
+                            && !share_endpoint(&segments[event_index], &segments[index])
+                        {
+                            intersections.insert(OrderedPair::new(event_index, index));
+                        }
+                    }
+                }
+            }
+            active
+                .entry(point)
+                .or_default()
+                .extend(event_data.tops.clone());
+        }
+
+        if !event_data.bottoms.is_empty() {
+            for &event_index in &event_data.bottoms {
+                if let Some(entry) = active.get_mut(&segments[event_index].top) {
+                    entry.remove(&event_index);
+                    if entry.is_empty() {
+                        active.remove(&segments[event_index].top);
+                    }
+                }
+            }
+        }
+
+        intersection_events.remove(&point);
+    }
+
+    intersections
 }

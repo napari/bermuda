@@ -1,4 +1,5 @@
 use rstest::rstest;
+use std::collections::HashSet;
 use triangulation::intersection;
 use triangulation::point::{Point, Segment};
 
@@ -93,4 +94,103 @@ fn test_find_intersection_collinear_segments() {
         )[1],
         Point::new_i(2, 0)
     );
+}
+
+///  (1, 0) --- (1, 1)
+///   |           |
+/// (0, 0) --- (0, 1)
+#[rstest]
+fn test_find_intersections_1() {
+    let segments = vec![
+        Segment::new(Point::new(0.0, 0.0), Point::new(0.0, 1.0)),
+        Segment::new(Point::new(0.0, 1.0), Point::new(1.0, 1.0)),
+        Segment::new(Point::new(1.0, 1.0), Point::new(1.0, 0.0)),
+        Segment::new(Point::new(1.0, 0.0), Point::new(0.0, 0.0)),
+    ];
+    let intersections = intersection::find_intersections(&segments);
+    assert!(intersections.is_empty());
+}
+
+///     (1, 0) --- (1, 1)
+///         \     /
+///          \   /
+///           \ /
+///            X
+///           / \
+///          /   \
+///         /     \
+///     (0, 0) --- (0, 1)
+#[rstest]
+fn test_find_intersections_2() {
+    let segments = vec![
+        Segment::new(Point::new(0.0, 0.0), Point::new(0.0, 1.0)),
+        Segment::new(Point::new(0.0, 1.0), Point::new(1.0, 0.0)),
+        Segment::new(Point::new(1.0, 0.0), Point::new(1.0, 1.0)),
+        Segment::new(Point::new(1.0, 1.0), Point::new(0.0, 0.0)),
+        Segment::new(Point::new(0.0, 0.0), Point::new(0.0, 1.0)),
+    ];
+    let intersections = intersection::find_intersections(&segments);
+    let expected = [(1, 3)]
+        .iter()
+        .map(|&(a, b)| intersection::OrderedPair::new(a, b))
+        .collect();
+    assert_eq!(intersections, expected);
+}
+
+#[rstest]
+#[case::no_intersections_simple_square(
+    vec![
+        Segment::new_i((0, 0), (0, 1)),
+        Segment::new_i((0, 1), (1, 1)),
+        Segment::new_i((1, 1), (1, 0)),
+        Segment::new_i((1, 0), (0, 0)),
+    ],
+    HashSet::new()
+)]
+#[case::one_intersection_crossing_diagonals(
+    vec![
+        Segment::new_i((0, 0), (2, 2)),
+        Segment::new_i((2, 0), (0, 2)),
+    ],
+    [(0, 1)].iter().map(|&(a, b)| intersection::OrderedPair::new(a, b)).collect()
+)]
+#[case::multiple_intersections_complex_shape(
+    vec![
+        Segment::new_i((0, 0), (2, 2)),
+        Segment::new_i((2, 0), (0, 2)),
+        Segment::new_i((1, 0), (1, 2)),
+        Segment::new_i((0, 1), (2, 1)),
+    ],
+    [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)].iter().map(|&(a, b)| intersection::OrderedPair::new(a, b)).collect()
+)]
+#[case::no_intersections_non_intersecting_lines(
+    vec![
+        Segment::new_i((0, 0), (1, 1)),
+        Segment::new_i((2, 2), (3, 3)),
+    ],
+    HashSet::new()
+)]
+#[case::one_intersection_t_shaped_intersection(
+    vec![
+        Segment::new_i((0, 0), (2, 0)),
+        Segment::new_i((1, -1), (1, 1)),
+    ],
+    [(0, 1)].iter().map(|&(a, b)| intersection::OrderedPair::new(a, b)).collect()
+)]
+#[case::multiple_intersections_grid_shape(
+    vec![
+        Segment::new_i((0, 0), (2, 0)),
+        Segment::new_i((0, 1), (2, 1)),
+        Segment::new_i((0, 2), (2, 2)),
+        Segment::new_i((0, 0), (0, 2)),
+        Segment::new_i((1, 0), (1, 2)),
+        Segment::new_i((2, 0), (2, 2)),
+    ],
+    [(0, 4), (1, 3), (1, 4), (1, 5), (2, 4)].iter().map(|&(a, b)| intersection::OrderedPair::new(a, b)).collect()
+)]
+fn test_find_intersections_param(
+    #[case] segments: Vec<Segment>,
+    #[case] expected: HashSet<intersection::OrderedPair>,
+) {
+    assert_eq!(intersection::find_intersections(&segments), expected);
 }
