@@ -384,7 +384,7 @@ pub fn find_intersections(segments: &[point::Segment]) -> HashSet<OrderedPair> {
     let mut active: BTreeMap<point::Point, HashSet<point::Index>> = BTreeMap::new();
 
     while !intersection_events.is_empty() {
-        let (point, event_data) = intersection_events.iter().next_back().unwrap();
+        let (&point, event_data) = intersection_events.iter().next_back().unwrap();
         let point = point.clone();
         let event_data = event_data.clone();
 
