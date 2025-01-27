@@ -14,7 +14,7 @@ repos:
       - id: validate-pyproject
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.28.3
+    rev: dictgen-v0.3.1
     hooks:
       - id: typos
 
@@ -28,13 +28,13 @@ repos:
         pass_filenames: false # This makes it a lot faster
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         types_or: [yaml, json5]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+    rev: v0.9.3
     hooks:
       - id: ruff-format
       - id: ruff
