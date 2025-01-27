@@ -73,6 +73,45 @@ pub fn on_segment_if_collinear(p: point::Point, q: point::Point, r: point::Point
     }
 }
 
+/// Determines the orientation of three points (p, q, r).
+///
+/// This function calculates the orientation of the ordered triplet (p, q, r).
+/// The possible return values and their meanings are:
+///
+/// * 0: The points are collinear.
+/// * 1: Clockwise orientation.
+/// * 2: Counterclockwise orientation.
+///
+/// # Arguments
+///
+/// * `p` - The first [`Point`](crate::point::Point).
+/// * `q` - The second [`Point`](crate::point::Point).
+/// * `r` - The third [`Point`](crate::point::Point).
+///
+/// # Returns
+///
+/// An integer representing the orientation: 0 for collinear, 1 for clockwise, 2 for counterclockwise.
+///
+/// # Example
+///
+/// ```rust
+/// use triangulation::point::Point;
+/// use triangulation::intersection::orientation;
+///
+/// let p = Point::new(0.0, 0.0);
+/// let q = Point::new(1.0, 1.0);
+/// let r = Point::new(2.0, 2.0);
+///
+/// assert_eq!(orientation(p, q, r), 0); // Collinear points
+///
+/// let r_clockwise = Point::new(2.0, 0.0);
+/// assert_eq!(orientation(p, q, r_clockwise), 1); // Clockwise orientation
+///
+/// let r_counterclockwise = Point::new(0.0, 2.0);
+/// assert_eq!(orientation(p, q, r_counterclockwise), 2); // Counterclockwise orientation
+///
+/// ```
+
 pub fn orientation(p: point::Point, q: point::Point, r: point::Point) -> i32 {
     let val1 = (q.y - p.y) * (r.x - q.x);
     let val2 = (r.y - q.y) * (q.x - p.x);
@@ -83,4 +122,65 @@ pub fn orientation(p: point::Point, q: point::Point, r: point::Point) -> i32 {
     } else {
         2
     }
+}
+
+/// Determines if two segments intersect.
+///
+/// This function checks whether two line segments, `s1` and `s2`, intersect with each other.
+///
+/// # Arguments
+///
+/// * `s1` - A reference to the first [`Segment`](crate::point::Segment).
+/// * `s2` - A reference to the second [`Segment`](crate::point::Segment).
+///
+/// # Returns
+///
+/// * `true` - If the segments intersect.
+/// * `false` - If the segments do not intersect.
+///
+/// # Examples
+///
+/// ```rust
+/// use triangulation::point::{Point, Segment};
+/// use triangulation::intersection::do_intersect;
+///
+/// let seg1 = Segment::new(Point::new(0.0, 0.0), Point::new(4.0, 4.0));
+/// let seg2 = Segment::new(Point::new(0.0, 4.0), Point::new(4.0, 0.0));
+///
+/// assert!(do_intersect(&seg1, &seg2)); // The segments intersect
+///
+/// let seg3 = Segment::new(Point::new(0.0, 0.0), Point::new(2.0, 2.0));
+/// let seg4 = Segment::new(Point::new(3.0, 3.0), Point::new(4.0, 4.0));
+///
+/// assert!(!do_intersect(&seg3, &seg4)); // The segments do not intersect
+/// ```
+pub fn do_intersect(s1: &point::Segment, s2: &point::Segment) -> bool {
+    let p1 = s1.bottom;
+    let q1 = s1.top;
+    let p2 = s2.bottom;
+    let q2 = s2.top;
+
+    let o1 = orientation(p1, q1, p2);
+    let o2 = orientation(p1, q1, q2);
+    let o3 = orientation(p2, q2, p1);
+    let o4 = orientation(p2, q2, q1);
+
+    if o1 != o2 && o3 != o4 {
+        return true;
+    }
+
+    if o1 == 0 && on_segment_if_collinear(p1, p2, q1) {
+        return true;
+    }
+    if o2 == 0 && on_segment_if_collinear(p1, q2, q1) {
+        return true;
+    }
+    if o3 == 0 && on_segment_if_collinear(p2, p1, q2) {
+        return true;
+    }
+    if o4 == 0 && on_segment_if_collinear(p2, q1, q2) {
+        return true;
+    }
+
+    false
 }

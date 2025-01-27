@@ -14,6 +14,9 @@ impl Point {
     pub fn new(x: Coord, y: Coord) -> Self {
         Self { x, y }
     }
+    pub fn new_i(x: i32, y: i32) -> Self {
+        Self::new(x as f32, y as f32)
+    }
 
     pub fn add(&self, other: &Point) -> Vector {
         Vector {
