@@ -184,3 +184,37 @@ pub fn do_intersect(s1: &point::Segment, s2: &point::Segment) -> bool {
 
     false
 }
+
+/// Checks if two segments share an endpoint.
+///
+/// This function determines whether two segments, each defined by
+/// two endpoints, share any endpoint. Specifically, it checks if
+/// the bottom or top endpoint of the first segment is equal to the
+/// bottom or top endpoint of the second segment.
+///
+/// # Arguments
+///
+/// * `s1` - The first segment.
+/// * `s2` - The second segment.
+///
+/// # Returns
+///
+/// `true` if the segments share at least one endpoint, `false` otherwise.
+///
+/// # Example
+///
+/// ```
+/// use triangulation::point::{Point, Segment};
+/// use triangulation::intersection::share_endpoint;
+///
+/// let s1 = Segment::new(Point::new(0.0, 0.0), Point::new(1.0, 1.0));
+/// let s2 = Segment::new(Point::new(1.0, 1.0), Point::new(2.0, 2.0));
+/// assert!(share_endpoint(&s1, &s2)); // Shared endpoint
+///
+/// let s3 = Segment::new(Point::new(0.0, 0.0), Point::new(1.0, 1.0));
+/// let s4 = Segment::new(Point::new(2.0, 2.0), Point::new(3.0, 3.0));
+/// assert!(!share_endpoint(&s3, &s4)); // No shared endpoint
+/// ```
+pub fn share_endpoint(s1: &point::Segment, s2: &point::Segment) -> bool {
+    s1.bottom == s2.bottom || s1.bottom == s2.top || s1.top == s2.bottom || s1.top == s2.top
+}

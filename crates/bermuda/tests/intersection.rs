@@ -50,6 +50,7 @@ fn test_do_intersect_crossing_segments() {
         &Segment::new(Point::new_i(-1, 0), Point::new_i(1, 0))
     ));
 }
+
 #[rstest]
 fn test_do_intersect_parallel_segments() {
     assert_ne!(
