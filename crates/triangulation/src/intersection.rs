@@ -89,24 +89,22 @@ impl OrderedPair {
 /// # Example
 ///
 /// ```rust
-/// use triangulation::point::Point;
+/// use triangulation::point::{Point, Segment};
 /// use triangulation::intersection::on_segment_if_collinear;
 ///
 /// let p = Point::new(0.0, 0.0);
 /// let r = Point::new(4.0, 4.0);
 /// let q = Point::new(2.0, 2.0);
+/// let s = Segment::new(p, r);
 ///
-/// assert!(on_segment_if_collinear(p, q, r)); // `q` lies on the segment
+/// assert!(on_segment_if_collinear(*s, q)); // `q` lies on the segment
 ///
 /// let q_outside = Point::new(5.0, 5.0);
-/// assert!(!on_segment_if_collinear(p, q_outside, r)); // `q_outside` does not lie on the segment
+/// assert!(!on_segment_if_collinear(*s, q_outside)); // `q_outside` does not lie on the segment
 /// ```
-pub fn on_segment_if_collinear(p: point::Point, q: point::Point, r: point::Point) -> bool {
-    if q.x <= p.x.max(r.x) && q.x >= p.x.min(r.x) && q.y <= p.y.max(r.y) && q.y >= p.y.min(r.y) {
-        true
-    } else {
-        false
-    }
+pub fn on_segment_if_collinear(s: &point::Segment, q: point::Point) -> bool {
+    // TODO We know that point is collinear, so we may use faster code.
+    s.point_on_line(q)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -208,16 +206,16 @@ pub fn do_intersect(s1: &point::Segment, s2: &point::Segment) -> bool {
         return true;
     }
 
-    if o1 == Orientation::Collinear && on_segment_if_collinear(p1, p2, q1) {
+    if o1 == Orientation::Collinear && on_segment_if_collinear(s1, p2) {
         return true;
     }
-    if o2 == Orientation::Collinear && on_segment_if_collinear(p1, q2, q1) {
+    if o2 == Orientation::Collinear && on_segment_if_collinear(s1, q2) {
         return true;
     }
-    if o3 == Orientation::Collinear && on_segment_if_collinear(p2, p1, q2) {
+    if o3 == Orientation::Collinear && on_segment_if_collinear(s2, p1) {
         return true;
     }
-    if o4 == Orientation::Collinear && on_segment_if_collinear(p2, q1, q2) {
+    if o4 == Orientation::Collinear && on_segment_if_collinear(s2, q1) {
         return true;
     }
 
@@ -244,17 +242,17 @@ pub fn do_intersect(s1: &point::Segment, s2: &point::Segment) -> bool {
 ///
 /// ```
 /// use triangulation::point::{Point, Segment};
-/// use triangulation::intersection::share_endpoint;
+/// use triangulation::intersection::do_share_endpoint;
 ///
 /// let s1 = Segment::new(Point::new(0.0, 0.0), Point::new(1.0, 1.0));
 /// let s2 = Segment::new(Point::new(1.0, 1.0), Point::new(2.0, 2.0));
-/// assert!(share_endpoint(&s1, &s2)); // Shared endpoint
+/// assert!(do_share_endpoint(&s1, &s2)); // Shared endpoint
 ///
 /// let s3 = Segment::new(Point::new(0.0, 0.0), Point::new(1.0, 1.0));
 /// let s4 = Segment::new(Point::new(2.0, 2.0), Point::new(3.0, 3.0));
-/// assert!(!share_endpoint(&s3, &s4)); // No shared endpoint
+/// assert!(!do_share_endpoint(&s3, &s4)); // No shared endpoint
 /// ```
-pub fn share_endpoint(s1: &point::Segment, s2: &point::Segment) -> bool {
+pub fn do_share_endpoint(s1: &point::Segment, s2: &point::Segment) -> bool {
     s1.bottom == s2.bottom || s1.bottom == s2.top || s1.top == s2.bottom || s1.top == s2.top
 }
 
@@ -412,7 +410,7 @@ pub fn find_intersections(segments: &[point::Segment]) -> HashSet<OrderedPair> {
             for active_el in active.iter() {
                 for &index in active_el.1 {
                     if do_intersect(&segments[event_index], &segments[index])
-                        && !share_endpoint(&segments[event_index], &segments[index])
+                        && !do_share_endpoint(&segments[event_index], &segments[index])
                     {
                         intersections.insert(OrderedPair::new(event_index, index));
                     }
