@@ -383,36 +383,28 @@ pub fn find_intersections(segments: &[point::Segment]) -> HashSet<OrderedPair> {
 
     let mut active: BTreeMap<point::Point, HashSet<point::Index>> = BTreeMap::new();
 
-    while !intersection_events.is_empty() {
-        let (&point, event_data) = intersection_events.iter().next_back().unwrap();
-        let point = point.clone();
-        let event_data = event_data.clone();
-
-        if !event_data.tops.is_empty() {
+    while let Some((&point, event_data)) = intersection_events.iter().next_back() {
+        for &event_index in &event_data.tops {
             for active_el in active.iter() {
-                for &event_index in &event_data.tops {
-                    for &index in active_el.1 {
-                        if do_intersect(&segments[event_index], &segments[index])
-                            && !share_endpoint(&segments[event_index], &segments[index])
-                        {
-                            intersections.insert(OrderedPair::new(event_index, index));
-                        }
+                for &index in active_el.1 {
+                    if do_intersect(&segments[event_index], &segments[index])
+                        && !share_endpoint(&segments[event_index], &segments[index])
+                    {
+                        intersections.insert(OrderedPair::new(event_index, index));
                     }
                 }
             }
-            active
-                .entry(point)
-                .or_default()
-                .extend(event_data.tops.clone());
         }
+        active
+            .entry(point)
+            .or_default()
+            .extend(event_data.tops.iter());
 
-        if !event_data.bottoms.is_empty() {
-            for &event_index in &event_data.bottoms {
-                if let Some(entry) = active.get_mut(&segments[event_index].top) {
-                    entry.remove(&event_index);
-                    if entry.is_empty() {
-                        active.remove(&segments[event_index].top);
-                    }
+        for &event_index in &event_data.bottoms {
+            if let Some(entry) = active.get_mut(&segments[event_index].top) {
+                entry.remove(&event_index);
+                if entry.is_empty() {
+                    active.remove(&segments[event_index].top);
                 }
             }
         }
