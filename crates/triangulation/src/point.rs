@@ -288,6 +288,27 @@ impl Triangle {
     }
 }
 
+/// Calculates the Euclidean distance between two points.
+///
+/// # Arguments
+/// * `p1` - The first point.
+/// * `p2` - The second point.
+///
+/// # Returns
+/// Returns the distance between `p1` and `p2` as a `Coord`.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::{Point, vector_length};
+///
+/// let point1 = Point { x: 3.0, y: 0.0 };
+/// let point2 = Point { x: 0.0, y: 4.0 };
+///
+/// let distance = vector_length(point1, point2);
+/// assert_eq!(distance, 5.0);
+/// ```
 pub fn vector_length(p1: Point, p2: Point) -> Coord {
-    ((p1.x - p2.x).powi(2) + (p1.y - p2.y).powi(2)).sqrt()
+    let dx = p1.x - p2.x;
+    let dy = p1.y - p2.y;
+    (dx * dx + dy * dy).sqrt()
 }
