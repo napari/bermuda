@@ -258,6 +258,14 @@ pub fn share_endpoint(s1: &point::Segment, s2: &point::Segment) -> bool {
     s1.bottom == s2.bottom || s1.bottom == s2.top || s1.top == s2.bottom || s1.top == s2.top
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Intersection {
+    NoIntersection,
+    PointIntersection(point::Point),
+    CollinearNoOverlap,
+    CollinearWithOverlap(Vec<point::Point>),
+}
+
 /// Finds the intersection point of two line segments, if it exists.
 ///
 /// This function calculates the intersection point of two given line segments.
@@ -274,33 +282,32 @@ pub fn share_endpoint(s1: &point::Segment, s2: &point::Segment) -> bool {
 ///
 /// # Returns
 ///
-/// A vector of [`Point`](point::Point) representing the intersection point(s),
-/// or an empty vector if they do not intersect or are collinear and non-overlapping.
+/// An element of Intersection enum with intersection points
 ///
 /// # Example
 ///
 /// ```
 /// use triangulation::point::{Point, Segment};
-/// use triangulation::intersection::find_intersection;
+/// use triangulation::intersection::{find_intersection, Intersection};
 ///
 /// let s1 = Segment::new(Point::new(0.0, 0.0), Point::new(2.0, 2.0));
 /// let s2 = Segment::new(Point::new(0.0, 2.0), Point::new(2.0, 0.0));
 /// let intersection = find_intersection(&s1, &s2);
-/// assert_eq!(intersection, vec![Point::new(1.0, 1.0)]); // Intersecting segments
+/// assert_eq!(intersection, Intersection::PointIntersection(Point::new(1.0, 1.0))); // Intersecting segments
 ///
 /// let s3 = Segment::new(Point::new(0.0, 0.0), Point::new(1.0, 1.0));
 /// let s4 = Segment::new(Point::new(2.0, 2.0), Point::new(3.0, 3.0));
 /// let intersection = find_intersection(&s3, &s4);
-/// assert!(intersection.is_empty()); // Non-intersecting segments
+/// assert!(matches!(intersection, Intersection::CollinearNoOverlap)); // Non-intersecting segments
 ///
 /// let s5 = Segment::new(Point::new(0.0, 0.0), Point::new(2.0, 0.0));
 /// let s6 = Segment::new(Point::new(1.0, 0.0), Point::new(3.0, 0.0));
 /// let intersection = find_intersection(&s5, &s6);
-/// assert!(!intersection.is_empty()); // Overlapping collinear segments
+/// assert!(matches!(intersection, Intersection::CollinearWithOverlap(_))); // Overlapping collinear segments
 ///
 ///
 /// ```
-pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Vec<point::Point> {
+pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersection {
     let a1 = s1.top.y - s1.bottom.y;
     let b1 = s1.bottom.x - s1.top.x;
     let a2 = s2.top.y - s2.bottom.y;
@@ -326,7 +333,13 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Vec<point:
         // remove duplicates from the collinear intersection case
         res.sort();
         res.dedup();
-        return res;
+        if res.len() == 0 {
+            return Intersection::CollinearNoOverlap;
+        }
+        if res.len() == 1 {
+            return Intersection::PointIntersection(res[0]);
+        }
+        return Intersection::CollinearWithOverlap(res);
     }
 
     let t = ((s2.top.x - s1.top.x) * (s2.bottom.y - s2.top.y)
@@ -335,15 +348,15 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Vec<point:
 
     // clip to handle problems with floating point precision
     if t < 0.0 {
-        return vec![s1.top];
+        return Intersection::PointIntersection(s1.top);
     }
     if t > 1.0 {
-        return vec![s1.bottom];
+        return Intersection::PointIntersection(s1.bottom);
     }
 
     let x = s1.top.x + t * b1;
     let y = s1.top.y + t * (-a1);
-    vec![point::Point { x, y }]
+    Intersection::PointIntersection(point::Point { x, y })
 }
 
 /// Finds intersections among a set of line segments.
