@@ -28,15 +28,45 @@ fn test_on_segment_if_collinear(
 }
 
 #[rstest]
-#[case::colinear_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(0.0, 2.0), 0)]
-#[case::colinear_2(Point::new(0.0, 0.0), Point::new(0.0, 2.0), Point::new(0.0, 1.0), 0)]
-#[case::colinear_3(Point::new(0.0, 2.0), Point::new(0.0, 0.0), Point::new(0.0, 1.0), 0)]
-#[case::clockwise_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(1.0, 2.0), 1)]
-#[case::counter_clockwise_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(-1.0, 2.0), 2)]
-#[case::counter_clockwise_2(Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), 2)] // Right angle
-#[case::colinear_4(Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(1.0, -1.0), 0)] // Same x, not collinear
-#[case::counter_clockwise_precision(Point::new(0.0, 0.0), Point::new(0.0001, 0.0001), Point::new(-0.0001, 0.0001), 2)] // Precision case1
-fn test_orientation(#[case] p: Point, #[case] q: Point, #[case] r: Point, #[case] expected: i32) {
+#[case::colinear_1(
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 1.0),
+    Point::new(0.0, 2.0),
+    intersection::Orientation::Collinear
+)]
+#[case::colinear_2(
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 2.0),
+    Point::new(0.0, 1.0),
+    intersection::Orientation::Collinear
+)]
+#[case::colinear_3(
+    Point::new(0.0, 2.0),
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 1.0),
+    intersection::Orientation::Collinear
+)]
+#[case::clockwise_1(
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 1.0),
+    Point::new(1.0, 2.0),
+    intersection::Orientation::Clockwise
+)]
+#[case::counter_clockwise_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(-1.0, 2.0), intersection::Orientation::CounterClockwise)]
+#[case::counter_clockwise_2(
+    Point::new(0.0, 0.0),
+    Point::new(1.0, 0.0),
+    Point::new(1.0, 1.0),
+    intersection::Orientation::CounterClockwise
+)] // Right angle
+#[case::colinear_4(Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(1.0, -1.0), intersection::Orientation::Collinear)] // Same x, not collinear
+#[case::counter_clockwise_precision(Point::new(0.0, 0.0), Point::new(0.0001, 0.0001), Point::new(-0.0001, 0.0001), intersection::Orientation::CounterClockwise)] // Precision case1
+fn test_orientation(
+    #[case] p: Point,
+    #[case] q: Point,
+    #[case] r: Point,
+    #[case] expected: intersection::Orientation,
+) {
     assert_eq!(intersection::orientation(p, q, r), expected);
 }
 

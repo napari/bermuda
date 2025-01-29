@@ -59,8 +59,16 @@ impl Ord for OrderedPair {
 }
 
 impl OrderedPair {
-    pub fn new(i1: usize, i2: usize) -> Self {
+    pub fn new(i1: point::Index, i2: point::Index) -> Self {
         OrderedPair(i1.min(i2), i1.max(i2))
+    }
+
+    pub fn first(&self) -> point::Index {
+        self.0
+    }
+
+    pub fn second(&self) -> point::Index {
+        self.1
     }
 }
 
@@ -101,14 +109,17 @@ pub fn on_segment_if_collinear(p: point::Point, q: point::Point, r: point::Point
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum Orientation {
+    Collinear,
+    Clockwise,
+    CounterClockwise,
+}
+
 /// Determines the orientation of three points (p, q, r).
 ///
 /// This function calculates the orientation of the ordered triplet (p, q, r).
 /// The possible return values and their meanings are:
-///
-/// * 0: The points are collinear.
-/// * 1: Clockwise orientation.
-/// * 2: Counterclockwise orientation.
 ///
 /// # Arguments
 ///
@@ -118,37 +129,37 @@ pub fn on_segment_if_collinear(p: point::Point, q: point::Point, r: point::Point
 ///
 /// # Returns
 ///
-/// An integer representing the orientation: 0 for collinear, 1 for clockwise, 2 for counterclockwise.
+///  Proper Orientation Enum
 ///
 /// # Example
 ///
 /// ```rust
 /// use triangulation::point::Point;
-/// use triangulation::intersection::orientation;
+/// use triangulation::intersection::{orientation, Orientation};
 ///
 /// let p = Point::new(0.0, 0.0);
 /// let q = Point::new(1.0, 1.0);
 /// let r = Point::new(2.0, 2.0);
 ///
-/// assert_eq!(orientation(p, q, r), 0); // Collinear points
+/// assert_eq!(orientation(p, q, r), Orientation::Collinear); // Collinear points
 ///
 /// let r_clockwise = Point::new(2.0, 0.0);
-/// assert_eq!(orientation(p, q, r_clockwise), 1); // Clockwise orientation
+/// assert_eq!(orientation(p, q, r_clockwise), Orientation::Clockwise); // Clockwise orientation
 ///
 /// let r_counterclockwise = Point::new(0.0, 2.0);
-/// assert_eq!(orientation(p, q, r_counterclockwise), 2); // Counterclockwise orientation
+/// assert_eq!(orientation(p, q, r_counterclockwise), Orientation::CounterClockwise); // Counterclockwise orientation
 ///
 /// ```
 
-pub fn orientation(p: point::Point, q: point::Point, r: point::Point) -> i32 {
+pub fn orientation(p: point::Point, q: point::Point, r: point::Point) -> Orientation {
     let val1 = (q.y - p.y) * (r.x - q.x);
     let val2 = (r.y - q.y) * (q.x - p.x);
     if val1 == val2 {
-        0
+        Orientation::Collinear
     } else if val1 > val2 {
-        1
+        Orientation::Clockwise
     } else {
-        2
+        Orientation::CounterClockwise
     }
 }
 
@@ -197,16 +208,16 @@ pub fn do_intersect(s1: &point::Segment, s2: &point::Segment) -> bool {
         return true;
     }
 
-    if o1 == 0 && on_segment_if_collinear(p1, p2, q1) {
+    if o1 == Orientation::Collinear && on_segment_if_collinear(p1, p2, q1) {
         return true;
     }
-    if o2 == 0 && on_segment_if_collinear(p1, q2, q1) {
+    if o2 == Orientation::Collinear && on_segment_if_collinear(p1, q2, q1) {
         return true;
     }
-    if o3 == 0 && on_segment_if_collinear(p2, p1, q2) {
+    if o3 == Orientation::Collinear && on_segment_if_collinear(p2, p1, q2) {
         return true;
     }
-    if o4 == 0 && on_segment_if_collinear(p2, q1, q2) {
+    if o4 == Orientation::Collinear && on_segment_if_collinear(p2, q1, q2) {
         return true;
     }
 
