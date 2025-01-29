@@ -3,28 +3,29 @@ use std::collections::HashSet;
 use triangulation::intersection;
 use triangulation::point::{Point, Segment};
 
+fn seg(x1: i32, y1: i32, x2: i32, y2: i32) -> Segment {
+    Segment::new(
+        Point::new(x1 as f32, y1 as f32),
+        Point::new(x2 as f32, y2 as f32),
+    )
+}
+
+fn seg_f(x1: f32, y1: f32, x2: f32, y2: f32) -> Segment {
+    Segment::new(Point::new(x1, y1), Point::new(x2, y2))
+}
+
 #[rstest]
-#[case(Point::new(0.0, 0.0), Point::new(0.5, 0.5), Point::new(1.0, 1.0), true)]
-#[case(Point::new(0.0, 0.0), Point::new(0.0, 0.5), Point::new(0.0, 1.0), true)]
-#[case(Point::new(0.0, 0.0), Point::new(0.5, 0.0), Point::new(1.0, 0.0), true)]
-#[case(Point::new_i(0, 0), Point::new_i(1, 1), Point::new(0.5, 0.5), false)]
-#[case(Point::new_i(0, 0), Point::new_i(0, 1), Point::new(0.0, 0.5), false)]
-#[case(Point::new_i(0, 0), Point::new_i(1, 0), Point::new(0.5, 0.0), false)]
-#[case(Point::new(1e6, 1e6), Point::new(2e6, 2e6), Point::new(3e6, 3e6), true)]
-#[case(
-    Point::new(0.0, 0.0),
-    Point::new(0.0001, 0.0001),
-    Point::new(0.0002, 0.0002),
-    true
-)]
-#[case(Point::new(-1.0, -1.0), Point::new(-2.0, -2.0), Point::new(-3.0, -3.0), true)]
-fn test_on_segment_if_collinear(
-    #[case] p: Point,
-    #[case] q: Point,
-    #[case] r: Point,
-    #[case] expected: bool,
-) {
-    assert_eq!(intersection::on_segment_if_collinear(p, q, r), expected);
+#[case(seg(0, 0, 2, 2), Point::new(1.0, 1.0), true)]
+#[case(seg(0, 0, 0, 2), Point::new(0.0, 1.0), true)]
+#[case(seg(0, 0, 2, 0), Point::new(1.0, 0.0), true)]
+#[case(seg(0, 0, 1, 1), Point::new(2.0, 2.0), false)]
+#[case(seg(0, 0, 0, 1), Point::new(0.0, 2.0), false)]
+#[case(seg(0, 0, 1, 0), Point::new(2.0, 0.0), false)]
+#[case(seg_f(1e6, 1e6, 3e6, 3e6), Point::new(2e6, 2e6), true)]
+#[case(seg_f(0.0, 0.0, 0.0001, 0.0001), Point::new(0.00005, 0.00005), true)]
+#[case(seg(0, 0, -2, -2), Point::new(-1.0, -1.0), true)]
+fn test_on_segment_if_collinear(#[case] s: Segment, #[case] q: Point, #[case] expected: bool) {
+    assert_eq!(intersection::on_segment_if_collinear(&s, q), expected);
 }
 
 #[rstest]

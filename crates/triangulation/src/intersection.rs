@@ -97,10 +97,10 @@ impl OrderedPair {
 /// let q = Point::new(2.0, 2.0);
 /// let s = Segment::new(p, r);
 ///
-/// assert!(on_segment_if_collinear(*s, q)); // `q` lies on the segment
+/// assert!(on_segment_if_collinear(&s, q)); // `q` lies on the segment
 ///
 /// let q_outside = Point::new(5.0, 5.0);
-/// assert!(!on_segment_if_collinear(*s, q_outside)); // `q_outside` does not lie on the segment
+/// assert!(!on_segment_if_collinear(&s, q_outside)); // `q_outside` does not lie on the segment
 /// ```
 pub fn on_segment_if_collinear(s: &point::Segment, q: point::Point) -> bool {
     // TODO We know that point is collinear, so we may use faster code.
