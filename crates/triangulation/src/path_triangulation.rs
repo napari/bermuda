@@ -1,5 +1,4 @@
 use crate::point;
-use crate::point::Vector;
 
 #[derive(Debug)]
 pub struct PathTriangulation {
@@ -46,7 +45,7 @@ fn add_triangles_for_join(
     bevel: bool,
 ) -> f32 {
     let idx = triangles.offsets.len();
-    let mitter: Vector;
+    let mitter: point::Vector;
     let length = point::vector_length(p2, p3);
     let p1_p2_diff_norm = (p2 - p1) / prev_length;
     let p2_p3_diff_norm = (p3 - p2) / length;

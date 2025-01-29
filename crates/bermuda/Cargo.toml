@@ -13,6 +13,9 @@ pyo3 = { workspace = true }
 numpy = { workspace = true }
 triangulation = { workspace = true }
 
+[dev-dependencies]
+rstest = { workspace = true}
+
 [lib]
 name = "_bermuda"
 crate-type = ["cdylib"]
