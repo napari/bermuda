@@ -50,8 +50,26 @@ jobs:
       - name: run test
         run: uv run --group test pytest
 
+  cargo-test:
+    name: Run cargo tests
+    needs: pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: run tests
+        run: cargo test --all-features --workspace
+
   build_wheels:
-    needs: test
+    needs: [test, cargo-test]
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
