@@ -303,5 +303,7 @@ impl Triangle {
 /// assert_eq!(distance, 5.0);
 /// ```
 pub fn vector_length(p1: Point, p2: Point) -> Coord {
-    ((p1.x - p2.x).powi(2) + (p1.y - p2.y).powi(2)).sqrt()
+    let dx = p1.x - p2.x;
+    let dy = p1.y - p2.y;
+    (dx * dx + dy * dy).sqrt()
 }
