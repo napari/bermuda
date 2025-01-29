@@ -16,6 +16,9 @@ triangulation = { workspace = true }
 [dev-dependencies]
 rstest = { workspace = true}
 
+[build-dependencies]
+pyo3-build-config = "0.23.3"
+
 [lib]
 name = "_bermuda"
 crate-type = ["cdylib"]
