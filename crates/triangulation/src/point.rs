@@ -271,6 +271,23 @@ impl Ord for Segment {
 }
 
 #[derive(Debug, Clone)]
+/// A structure representing a triangle using three indices of its vertices.
+///
+/// # Fields
+/// * `x` - The index of the first vertex.
+/// * `y` - The index of the second vertex.
+/// * `z` - The index of the third vertex.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::Triangle;
+///
+/// let triangle = Triangle::new(0, 1, 2);
+/// assert_eq!(triangle.x, 0);
+/// assert_eq!(triangle.y, 1);
+/// assert_eq!(triangle.z, 2);
+/// ```
+
 pub struct Triangle {
     pub x: Index,
     pub y: Index,
@@ -280,6 +297,18 @@ pub struct Triangle {
 impl Triangle {
     pub fn new(x: Index, y: Index, z: Index) -> Self {
         Triangle { x, y, z }
+    }
+}
+
+pub struct PointTriangle {
+    pub x: Point,
+    pub y: Point,
+    pub z: Point,
+}
+
+impl PointTriangle {
+    pub fn new(x: Point, y: Point, z: Point) -> Self {
+        PointTriangle { x, y, z }
     }
 }
 

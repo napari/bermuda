@@ -1,3 +1,4 @@
+pub mod monotone_polygon;
 pub mod path_triangulation;
 pub mod point;
 
