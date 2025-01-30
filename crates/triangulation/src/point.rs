@@ -318,7 +318,6 @@ pub enum Orientation {
 /// Determines the orientation of three points (p, q, r).
 ///
 /// This function calculates the orientation of the ordered triplet (p, q, r).
-/// The possible return values and their meanings are:
 ///
 /// # Arguments
 ///
@@ -329,6 +328,11 @@ pub enum Orientation {
 /// # Returns
 ///
 ///  Proper Orientation Enum
+///
+/// # Note
+///
+/// Due to floating-point arithmetic, the results may be sensitive to numerical precision
+/// when points are nearly collinear.
 ///
 /// # Example
 ///
@@ -348,7 +352,7 @@ pub enum Orientation {
 /// assert_eq!(orientation(p, q, r_counterclockwise), Orientation::CounterClockwise); // Counterclockwise orientation
 ///
 /// ```
-pub fn orientation(p: Point, q: Point, r: Point) -> Orientation {
+pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
     let val1 = (q.y - p.y) * (r.x - q.x);
     let val2 = (r.y - q.y) * (q.x - p.x);
     if val1 == val2 {
