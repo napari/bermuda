@@ -4,10 +4,10 @@ use std::collections::VecDeque;
 
 #[derive(Debug, Clone)]
 pub struct MonotonePolygon {
-    top: Point,
-    bottom: Option<Point>,
-    left: Vec<Point>,
-    right: Vec<Point>,
+    pub top: Point,
+    pub bottom: Option<Point>,
+    pub left: Vec<Point>,
+    pub right: Vec<Point>,
 }
 
 impl MonotonePolygon {
@@ -26,7 +26,7 @@ impl MonotonePolygon {
     }
 }
 
-fn _build_triangles_opposite_edge(
+fn build_triangles_opposite_edge(
     stack: &mut VecDeque<Point>,
     result: &mut Vec<PointTriangle>,
     current_point: Point,
@@ -45,7 +45,7 @@ fn _build_triangles_opposite_edge(
     // in the stack.
 }
 
-fn _build_triangles_current_edge(
+fn build_triangles_current_edge(
     stack: &mut VecDeque<Point>,
     result: &mut Vec<PointTriangle>,
     current_point: Point,
@@ -53,7 +53,7 @@ fn _build_triangles_current_edge(
 ) {
     // Conversion of iterator logic to Rust using indices is generally preferred
     let mut i = stack.len() - 1;
-    let orientation_ = if (*expected_orientation == Side::Left) {
+    let orientation_ = if *expected_orientation == Side::Left {
         Orientation::Collinear
     } else {
         Orientation::CounterClockwise
@@ -116,9 +116,9 @@ pub fn triangulate_monotone_polygon(polygon: &MonotonePolygon) -> Vec<PointTrian
 
     for i in 2..points.len() {
         if *side == points[i].1 {
-            _build_triangles_current_edge(&mut stack, &mut result, points[i].0, side);
+            build_triangles_current_edge(&mut stack, &mut result, points[i].0, side);
         } else {
-            _build_triangles_opposite_edge(&mut stack, &mut result, points[i].0);
+            build_triangles_opposite_edge(&mut stack, &mut result, points[i].0);
         }
         side = &points[i].1;
     }

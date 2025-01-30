@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -300,6 +301,7 @@ impl Triangle {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct PointTriangle {
     pub x: Point,
     pub y: Point,
@@ -310,7 +312,23 @@ impl PointTriangle {
     pub fn new(x: Point, y: Point, z: Point) -> Self {
         PointTriangle { x, y, z }
     }
+
+    fn get_points_set(&self) -> HashSet<Point> {
+        let mut points_set = HashSet::with_capacity(3);
+        points_set.insert(self.x);
+        points_set.insert(self.y);
+        points_set.insert(self.z);
+        points_set
+    }
 }
+
+impl PartialEq for PointTriangle {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_points_set() == other.get_points_set()
+    }
+}
+
+impl Eq for PointTriangle {}
 
 /// Calculates the Euclidean distance between two points.
 ///
