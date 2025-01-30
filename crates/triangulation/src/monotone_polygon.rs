@@ -1,4 +1,3 @@
-use crate::monotone_polygon::Side::LEFT;
 use crate::point::{orientation, Orientation, Point, PointTriangle};
 use std::cmp::PartialEq;
 use std::collections::VecDeque;
@@ -54,7 +53,7 @@ fn _build_triangles_current_edge(
 ) {
     // Conversion of iterator logic to Rust using indices is generally preferred
     let mut i = stack.len() - 1;
-    let orientation_ = if (*expected_orientation == Side::LEFT) {
+    let orientation_ = if (*expected_orientation == Side::Left) {
         Orientation::Collinear
     } else {
         Orientation::CounterClockwise
@@ -73,8 +72,8 @@ fn _build_triangles_current_edge(
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Side {
     TopOrBottom,
-    LEFT,
-    RIGHT,
+    Left,
+    Right,
 }
 
 pub fn triangulate_monotone_polygon(polygon: &MonotonePolygon) -> Vec<PointTriangle> {
@@ -91,21 +90,21 @@ pub fn triangulate_monotone_polygon(polygon: &MonotonePolygon) -> Vec<PointTrian
 
     while left_index < polygon.left.len() && right_index < polygon.right.len() {
         if polygon.left[left_index] < polygon.right[right_index] {
-            points.push((polygon.right[right_index], Side::RIGHT));
+            points.push((polygon.right[right_index], Side::Right));
             right_index += 1;
         } else {
-            points.push((polygon.left[left_index], Side::LEFT));
+            points.push((polygon.left[left_index], Side::Left));
             left_index += 1;
         }
     }
 
     while left_index < polygon.left.len() {
-        points.push((polygon.left[left_index], Side::LEFT));
+        points.push((polygon.left[left_index], Side::Left));
         left_index += 1;
     }
 
     while right_index < polygon.right.len() {
-        points.push((polygon.right[right_index], Side::RIGHT));
+        points.push((polygon.right[right_index], Side::Right));
         right_index += 1;
     }
 
