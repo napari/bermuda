@@ -107,59 +107,6 @@ pub fn on_segment_if_collinear(s: &point::Segment, q: point::Point) -> bool {
     s.point_on_line(q)
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum Orientation {
-    Collinear,
-    Clockwise,
-    CounterClockwise,
-}
-
-/// Determines the orientation of three points (p, q, r).
-///
-/// This function calculates the orientation of the ordered triplet (p, q, r).
-/// The possible return values and their meanings are:
-///
-/// # Arguments
-///
-/// * `p` - The first [`Point`](point::Point).
-/// * `q` - The second [`Point`](point::Point).
-/// * `r` - The third [`Point`](point::Point).
-///
-/// # Returns
-///
-///  Proper Orientation Enum
-///
-/// # Example
-///
-/// ```rust
-/// use triangulation::point::Point;
-/// use triangulation::intersection::{orientation, Orientation};
-///
-/// let p = Point::new(0.0, 0.0);
-/// let q = Point::new(1.0, 1.0);
-/// let r = Point::new(2.0, 2.0);
-///
-/// assert_eq!(orientation(p, q, r), Orientation::Collinear); // Collinear points
-///
-/// let r_clockwise = Point::new(2.0, 0.0);
-/// assert_eq!(orientation(p, q, r_clockwise), Orientation::Clockwise); // Clockwise orientation
-///
-/// let r_counterclockwise = Point::new(0.0, 2.0);
-/// assert_eq!(orientation(p, q, r_counterclockwise), Orientation::CounterClockwise); // Counterclockwise orientation
-///
-/// ```
-
-pub fn orientation(p: point::Point, q: point::Point, r: point::Point) -> Orientation {
-    let val1 = (q.y - p.y) * (r.x - q.x);
-    let val2 = (r.y - q.y) * (q.x - p.x);
-    if val1 == val2 {
-        Orientation::Collinear
-    } else if val1 > val2 {
-        Orientation::Clockwise
-    } else {
-        Orientation::CounterClockwise
-    }
-}
 
 /// Determines if two segments intersect.
 ///
@@ -197,25 +144,25 @@ pub fn do_intersect(s1: &point::Segment, s2: &point::Segment) -> bool {
     let p2 = s2.bottom;
     let q2 = s2.top;
 
-    let o1 = orientation(p1, q1, p2);
-    let o2 = orientation(p1, q1, q2);
-    let o3 = orientation(p2, q2, p1);
-    let o4 = orientation(p2, q2, q1);
+    let o1 = point::orientation(p1, q1, p2);
+    let o2 = point::orientation(p1, q1, q2);
+    let o3 = point::orientation(p2, q2, p1);
+    let o4 = point::orientation(p2, q2, q1);
 
     if o1 != o2 && o3 != o4 {
         return true;
     }
 
-    if o1 == Orientation::Collinear && on_segment_if_collinear(s1, p2) {
+    if o1 == point::Orientation::Collinear && on_segment_if_collinear(s1, p2) {
         return true;
     }
-    if o2 == Orientation::Collinear && on_segment_if_collinear(s1, q2) {
+    if o2 == point::Orientation::Collinear && on_segment_if_collinear(s1, q2) {
         return true;
     }
-    if o3 == Orientation::Collinear && on_segment_if_collinear(s2, p1) {
+    if o3 == point::Orientation::Collinear && on_segment_if_collinear(s2, p1) {
         return true;
     }
-    if o4 == Orientation::Collinear && on_segment_if_collinear(s2, q1) {
+    if o4 == point::Orientation::Collinear && on_segment_if_collinear(s2, q1) {
         return true;
     }
 
