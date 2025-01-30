@@ -307,3 +307,59 @@ pub fn vector_length(p1: Point, p2: Point) -> Coord {
     let dy = p1.y - p2.y;
     (dx * dx + dy * dy).sqrt()
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Orientation {
+    Collinear,
+    Clockwise,
+    CounterClockwise,
+}
+
+/// Determines the orientation of three points (p, q, r).
+///
+/// This function calculates the orientation of the ordered triplet (p, q, r).
+///
+/// # Arguments
+///
+/// * `p` - The first [`Point`](point::Point).
+/// * `q` - The second [`Point`](point::Point).
+/// * `r` - The third [`Point`](point::Point).
+///
+/// # Returns
+///
+///  Proper Orientation Enum
+///
+/// # Note
+///
+/// Due to floating-point arithmetic, the results may be sensitive to numerical precision
+/// when points are nearly collinear.
+///
+/// # Example
+///
+/// ```rust
+/// use triangulation::point::{Point, orientation, Orientation};
+///
+/// let p = Point::new(0.0, 0.0);
+/// let q = Point::new(1.0, 1.0);
+/// let r = Point::new(2.0, 2.0);
+///
+/// assert_eq!(orientation(p, q, r), Orientation::Collinear); // Collinear points
+///
+/// let r_clockwise = Point::new(2.0, 0.0);
+/// assert_eq!(orientation(p, q, r_clockwise), Orientation::Clockwise); // Clockwise orientation
+///
+/// let r_counterclockwise = Point::new(0.0, 2.0);
+/// assert_eq!(orientation(p, q, r_counterclockwise), Orientation::CounterClockwise); // Counterclockwise orientation
+///
+/// ```
+pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
+    let val1 = (q.y - p.y) * (r.x - q.x);
+    let val2 = (r.y - q.y) * (q.x - p.x);
+    if val1 == val2 {
+        Orientation::Collinear
+    } else if val1 > val2 {
+        Orientation::Clockwise
+    } else {
+        Orientation::CounterClockwise
+    }
+}
