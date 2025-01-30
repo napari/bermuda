@@ -107,7 +107,6 @@ pub fn on_segment_if_collinear(s: &point::Segment, q: point::Point) -> bool {
     s.point_on_line(q)
 }
 
-
 /// Determines if two segments intersect.
 ///
 /// This function checks whether two line segments, `s1` and `s2`, intersect with each other.

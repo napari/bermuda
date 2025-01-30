@@ -28,7 +28,6 @@ fn test_on_segment_if_collinear(#[case] s: Segment, #[case] q: Point, #[case] ex
     assert_eq!(intersection::on_segment_if_collinear(&s, q), expected);
 }
 
-
 #[rstest]
 fn test_do_intersect_crossing_segments() {
     assert!(intersection::do_intersect(
