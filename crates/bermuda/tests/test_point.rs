@@ -1,5 +1,5 @@
 use rstest::rstest;
-use triangulation::point::{Point, Segment, Vector};
+use triangulation::point::{orientation, Orientation, Point, Segment, Vector};
 
 #[rstest]
 fn test_segment_order() {
@@ -25,4 +25,47 @@ fn test_vector_add(
         Point::new(x1, y1) + Vector::new(x2, y2),
         Point::new(expected_x, expected_y)
     );
+}
+
+#[rstest]
+#[case::colinear_1(
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 1.0),
+    Point::new(0.0, 2.0),
+    Orientation::Collinear
+)]
+#[case::colinear_2(
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 2.0),
+    Point::new(0.0, 1.0),
+    Orientation::Collinear
+)]
+#[case::colinear_3(
+    Point::new(0.0, 2.0),
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 1.0),
+    Orientation::Collinear
+)]
+#[case::clockwise_1(
+    Point::new(0.0, 0.0),
+    Point::new(0.0, 1.0),
+    Point::new(1.0, 2.0),
+    Orientation::Clockwise
+)]
+#[case::counter_clockwise_1(Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(-1.0, 2.0), Orientation::CounterClockwise)]
+#[case::counter_clockwise_2(
+    Point::new(0.0, 0.0),
+    Point::new(1.0, 0.0),
+    Point::new(1.0, 1.0),
+    Orientation::CounterClockwise
+)] // Right angle
+#[case::colinear_4(Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(1.0, -1.0), Orientation::Collinear)] // Same x, not collinear
+#[case::counter_clockwise_precision(Point::new(0.0, 0.0), Point::new(0.0001, 0.0001), Point::new(-0.0001, 0.0001), Orientation::CounterClockwise)] // Precision case1
+fn test_orientation(
+    #[case] p: Point,
+    #[case] q: Point,
+    #[case] r: Point,
+    #[case] expected: Orientation,
+) {
+    assert_eq!(orientation(p, q, r), expected);
 }
