@@ -1,6 +1,6 @@
 # Napari bermuda
 
-*📌 Experimental: under active development. Please do not use it in production. :pin:*
+*📌 Experimental: under active development. Please do not use it in production.*
 
 Rust backend for napari contains code to speed up triangulation.
 
