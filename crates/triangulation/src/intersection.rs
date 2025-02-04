@@ -3,6 +3,8 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::Hash;
 
+const EPSILON: f32 = 1e-6;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Event {
     pub p: point::Point,
@@ -292,10 +294,18 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
 
     // clip to handle problems with floating point precision
     if t < 0.0 {
-        return Intersection::PointIntersection(s1.top);
+        return if t > -EPSILON {
+            Inter1section::PointIntersection(s1.top)
+        } else {
+            Intersection::NoIntersection
+        };
     }
     if t > 1.0 {
-        return Intersection::PointIntersection(s1.bottom);
+        return if t < 1.0 + EPSILON {
+            Intersection::PointIntersection(s1.bottom)
+        } else {
+            Intersection::NoIntersection
+        };
     }
 
     let x = s1.top.x + t * b1;
