@@ -295,7 +295,7 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
     // clip to handle problems with floating point precision
     if t < 0.0 {
         return if t > -EPSILON {
-            Inter1section::PointIntersection(s1.top)
+            Intersection::PointIntersection(s1.top)
         } else {
             Intersection::NoIntersection
         };
