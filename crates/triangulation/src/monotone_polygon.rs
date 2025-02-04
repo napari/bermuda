@@ -11,12 +11,21 @@ pub struct MonotonePolygon {
 }
 
 impl MonotonePolygon {
-    pub fn new(top: Point) -> Self {
-        MonotonePolygon {
+    pub fn new(top: Point, bottom: Point, left: Vec<Point>, right: Vec<Point>) -> Self {
+        Self {
+            top,
+            bottom: Some(bottom),
+            left,
+            right,
+        }
+    }
+
+    pub fn new_top(top: Point) -> Self {
+        Self {
             top,
             bottom: None,
-            left: Vec::new(),
-            right: Vec::new(),
+            left: vec![],
+            right: vec![],
         }
     }
 
@@ -36,9 +45,9 @@ fn build_triangles_opposite_edge(
     }
 
     let back = stack.pop_back().unwrap(); //  Get the last element
-    stack.pop_front(); // Remove the first element.
-    stack.push_front(back); //  Put last element at the beginning (equivalent to stack[0] = stack.back())
-    stack.push_front(current_point); // Put the current point at the beginning (equivalent to stack[1] = current_point)
+    stack.clear(); // Remove the first element.
+    stack.push_back(back); //  Put last element at the beginning (equivalent to stack[0] = stack.back())
+    stack.push_back(current_point); // Put the current point at the beginning (equivalent to stack[1] = current_point)
 
     // In Rust we don't need to manually erase from index 2 onwards. The
     // previous pop/push operations have already left only the first two elements
@@ -54,11 +63,10 @@ fn build_triangles_current_edge(
     // Conversion of iterator logic to Rust using indices is generally preferred
     let mut i = stack.len() - 1;
     let orientation_ = if *expected_orientation == Side::Left {
-        Orientation::Collinear
-    } else {
         Orientation::CounterClockwise
+    } else {
+        Orientation::Clockwise
     };
-
     while i > 0 && orientation(stack[i - 1], stack[i], current_point) == orientation_ {
         result.push(PointTriangle::new(current_point, stack[i], stack[i - 1]));
         i -= 1;
@@ -81,7 +89,7 @@ pub fn triangulate_monotone_polygon(polygon: &MonotonePolygon) -> Vec<PointTrian
     let mut left_index = 0;
     let mut right_index = 0;
     let mut stack: VecDeque<Point> = VecDeque::new(); // Using VecDeque for O(1) push_front
-    let mut points = Vec::new();
+    let mut points = Vec::with_capacity(polygon.left.len() + polygon.right.len() + 2);
 
     result.reserve(polygon.left.len() + polygon.right.len());
     points.reserve(polygon.left.len() + polygon.right.len() + 2);
