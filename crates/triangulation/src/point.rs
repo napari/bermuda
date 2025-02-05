@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -389,4 +389,90 @@ pub fn calc_dedup_edges(polygon_list: &[Vec<Point>]) -> Vec<Segment> {
         }
     }
     edges_set.into_iter().collect()
+}
+
+struct GraphNode {
+    edges: Vec<Point>,
+    visited: bool,
+    sub_index: usize,
+}
+
+impl Default for GraphNode {
+    fn default() -> Self {
+        GraphNode {
+            edges: Vec::new(),
+            visited: false,
+            sub_index: 0,
+        }
+    }
+}
+
+#[inline]
+pub fn split_polygon_on_repeated_edges(polygon: &[Point]) -> Vec<Vec<Point>> {
+    let edges_dedup = calc_dedup_edges(&[polygon.to_vec()]);
+    let mut result = Vec::new();
+
+    // Convert deduped edges to HashSet for efficient lookup
+    let edges_set: HashSet<Segment> = edges_dedup.into_iter().collect();
+    let mut edges_map: HashMap<Point, GraphNode> = HashMap::new();
+
+    // Build edges map from consecutive points
+    for window in polygon.windows(2) {
+        let segment = Segment::new(window[0], window[1]);
+        if edges_set.contains(&segment) {
+            edges_map
+                .entry(window[0])
+                .or_default()
+                .edges
+                .push(window[1]);
+        }
+    }
+
+    // Handle the edge between last and first point
+    if let (Some(back), Some(front)) = (polygon.last(), polygon.first()) {
+        let segment = Segment::new(*back, *front);
+        if edges_set.contains(&segment) {
+            edges_map.entry(*back).or_default().edges.push(*front);
+        }
+    }
+
+    // Process all edges
+    let mut edges_to_process: Vec<_> = edges_map.keys().cloned().collect();
+    while let Some(start_point) = edges_to_process.pop() {
+        if let Some(edge) = edges_map.get_mut(&start_point) {
+            if edge.visited {
+                continue;
+            }
+
+            edge.visited = true;
+            let mut new_polygon = vec![start_point];
+            let mut current_point = start_point;
+
+            // Follow the edge chain
+            while let Some(node) = edges_map.get_mut(&current_point) {
+                if node.sub_index >= node.edges.len() {
+                    break;
+                }
+
+                let next_point = node.edges[node.sub_index];
+                node.sub_index += 1;
+
+                if let Some(next_node) = edges_map.get_mut(&next_point) {
+                    next_node.visited = true;
+                }
+
+                new_polygon.push(next_point);
+                current_point = next_point;
+            }
+
+            // Remove duplicate points at the start/end
+            while new_polygon.len() > 1 && new_polygon.first() == new_polygon.last() {
+                new_polygon.pop();
+            }
+
+            result.push(new_polygon);
+        }
+    }
+
+    result
 }
