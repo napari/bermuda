@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -362,4 +363,30 @@ pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
     } else {
         Orientation::CounterClockwise
     }
+}
+
+#[inline]
+pub fn calc_dedup_edges(polygon_list: &[Vec<Point>]) -> Vec<Segment> {
+    let mut edges_set = HashSet::new();
+
+    for polygon in polygon_list {
+        // Process edges between consecutive points
+        for window in polygon.windows(2) {
+            let edge = Segment::new(window[0], window[1]);
+            if !edges_set.remove(&edge) {
+                edges_set.insert(edge);
+            }
+        }
+
+        // Process edge between last and first point if they're different
+        if let (Some(back), Some(front)) = (polygon.last(), polygon.first()) {
+            if back != front {
+                let edge = Segment::new(*back, *front);
+                if !edges_set.remove(&edge) {
+                    edges_set.insert(edge);
+                }
+            }
+        }
+    }
+    edges_set.into_iter().collect()
 }
