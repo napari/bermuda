@@ -271,7 +271,7 @@ impl Ord for Segment {
 }
 
 #[derive(Debug, Clone)]
-/// A structure representing a triangle using three indices of its vertices.
+/// A structure representing a triangle as indexes of vertices.
 ///
 /// # Fields
 /// * `x` - The index of the first vertex.
@@ -370,7 +370,7 @@ impl PointTriangle {
 /// * `p2` - The second point.
 ///
 /// # Returns
-/// Returns the distance between `p1` and `p2` as a `Coord`.
+/// Distance between `p1` and `p2` as a `Coord`.
 ///
 /// # Examples
 /// ```

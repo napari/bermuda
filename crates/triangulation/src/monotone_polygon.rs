@@ -85,7 +85,7 @@ impl MonotonePolygon {
     }
 }
 
-/// Builds triangles when the current point is from the opposite edge than the previous one.
+/// Builds triangles when the current point is from the opposite edger than the previous one.
 ///
 /// This function is invoked during the y-monotone polygon triangulation process
 /// to handle the scenario where the current point is located on the opposite edge
