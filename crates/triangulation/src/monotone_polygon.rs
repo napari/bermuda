@@ -105,6 +105,12 @@ fn build_triangles_opposite_edge(
     result: &mut Vec<PointTriangle>,
     current_point: Point,
 ) {
+    #[cfg(debug_assertions)]
+    {
+        if stack.is_empty() {
+            panic!("Cannot build triangles when stack is empty. Ensure the polygon is not empty.");
+        }
+    }
     for i in 0..stack.len() - 1 {
         result.push(PointTriangle::new(current_point, stack[i], stack[i + 1]));
     }
@@ -199,6 +205,9 @@ enum Side {
 /// assert_eq!(triangles.len(), 4);
 /// ```
 pub fn triangulate_monotone_polygon(polygon: &MonotonePolygon) -> Vec<PointTriangle> {
+    if !polygon.finished() {
+        panic!("Cannot triangulate an unfinished polygon. Ensure the bottom is set before calling this function.");
+    }
     let mut result = Vec::new();
     let mut left_index = 0;
     let mut right_index = 0;
