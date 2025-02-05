@@ -301,6 +301,26 @@ impl Triangle {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// A structure representing a triangle using three [`Point`] as its vertices.
+///
+/// # Fields
+/// * `p1` - The first vertex of the triangle.
+/// * `p2` - The second vertex of the triangle.
+/// * `p3` - The third vertex of the triangle.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::{Point, PointTriangle};
+///
+/// let p1 = Point::new(0.0, 0.0);
+/// let p2 = Point::new(1.0, 0.0);
+/// let p3 = Point::new(0.0, 1.0);
+///
+/// let triangle = PointTriangle::new(p1, p2, p3);
+/// assert_eq!(triangle.p1, p1);
+/// assert_eq!(triangle.p2, p2);
+/// assert_eq!(triangle.p3, p3);
+/// ```
 pub struct PointTriangle {
     pub p1: Point,
     pub p2: Point,
@@ -308,8 +328,34 @@ pub struct PointTriangle {
 }
 
 impl PointTriangle {
+    /// Creates a new `PointTriangle`.
+    ///
+    /// The vertices of the triangle are reordered such that the triangle has a counterclockwise orientation.
+    ///
+    /// # Arguments
+    /// * `p1` - The first vertex of the triangle.
+    /// * `p2` - The second vertex of the triangle.
+    /// * `p3` - The third vertex of the triangle.
+    ///
+    /// # Returns
+    /// A `PointTriangle` instance with reordered vertices, if needed, to ensure counterclockwise orientation.
+    ///
+    /// # Examples
+    /// ```
+    /// use triangulation::point::{Point, PointTriangle};
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(1.0, 0.0);
+    /// let p3 = Point::new(0.0, 1.0);
+    ///
+    /// let triangle = PointTriangle::new(p1, p2, p3);
+    /// assert_eq!(triangle.p1, p1);
+    /// assert_eq!(triangle.p2, p2);
+    /// assert_eq!(triangle.p3, p3);
+    /// ```
     pub fn new(p1: Point, p2: Point, p3: Point) -> Self {
-        if (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) < 0.0 {
+        let orientation = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+        if orientation < 0.0 {
             Self { p1: p3, p2, p3: p1 }
         } else {
             Self { p1, p2, p3 }
