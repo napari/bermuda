@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -295,7 +296,7 @@ impl Triangle {
 /// * `p2` - The second point.
 ///
 /// # Returns
-/// Returns the distance between `p1` and `p2` as a `Coord`.
+/// The distance between `p1` and `p2` as a `Coord`.
 ///
 /// # Examples
 /// ```
@@ -367,4 +368,193 @@ pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
     } else {
         Orientation::CounterClockwise
     }
+}
+
+/// Calculates a deduplicated list of edges (as `Segment`s) from the input list of polygons.
+///
+/// This function processes a list of polygons (each represented as a vector of `Point`s)
+/// and generates a collection of unique `Segment`s that represent edges of the polygons.
+/// If an edge appears more than once (e.g., due to multiple polygons sharing edges, or polygon with holes),
+/// the duplicates are deduplicated modulo 2 (ex. edge that appears 2, 4, 6 times is not returned,
+/// edges, that is present 1, 3, 99 times is returned once)
+///
+/// # Arguments
+/// * `polygon_list` - A slice of vectors, where each vector represents a polygon
+///   as a list of `Point`s.
+///
+/// # Returns
+/// A `Vec<Segment>` containing all edges deduplicated modulo 2.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::{Point, Segment, calc_dedup_edges};
+///
+/// let polygon1 = vec![
+///     Point::new(0.0, 0.0),
+///     Point::new(1.0, 0.0),
+///     Point::new(1.0, 1.0),
+///     Point::new(0.0, 0.0),
+/// ];
+///
+/// let polygon2 = vec![
+///     Point::new(1.0, 0.0),
+///     Point::new(2.0, 0.0),
+///     Point::new(2.0, 1.0),
+///     Point::new(1.0, 0.0),
+/// ];
+///
+/// let edges = calc_dedup_edges(&[polygon1, polygon2]);
+/// assert_eq!(edges.len(), 6); // Deduplicated edges
+/// ```
+#[inline]
+pub fn calc_dedup_edges(polygon_list: &[Vec<Point>]) -> Vec<Segment> {
+    let mut edges_set = HashSet::new();
+
+    for polygon in polygon_list {
+        // Process edges between consecutive points
+        for window in polygon.windows(2) {
+            let edge = Segment::new(window[0], window[1]);
+            if !edges_set.remove(&edge) {
+                edges_set.insert(edge);
+            }
+        }
+
+        // Process edge between last and first point if they're different
+        if let (Some(back), Some(front)) = (polygon.last(), polygon.first()) {
+            if back != front {
+                let edge = Segment::new(*back, *front);
+                if !edges_set.remove(&edge) {
+                    edges_set.insert(edge);
+                }
+            }
+        }
+    }
+    edges_set.into_iter().collect()
+}
+
+struct GraphNode {
+    edges: Vec<Point>,
+    visited: bool,
+    sub_index: usize,
+}
+
+impl Default for GraphNode {
+    fn default() -> Self {
+        GraphNode {
+            edges: Vec::new(),
+            visited: false,
+            sub_index: 0,
+        }
+    }
+}
+
+/// Splits a polygon into multiple polygons based on repeated edges using a DFS graph traversal.
+///
+/// This function identifies duplicated edges within the polygon and splits it into multiple
+/// disjoint polygonal components. The splitting is guided by the unique edges that are determined
+/// through a deduplication process. The function returns the resulting polygons and the list of
+/// deduplicated edges.
+///
+/// # Arguments
+/// * `polygon` - A slice of `Point`s representing a polygon to be split.
+///
+/// # Returns
+/// A tuple containing:
+/// * A `Vec<Vec<Point>>` representing the split polygons as individual vectors of points.
+/// * A `Vec<Segment>` containing the deduplicated list of edges used during splitting.
+///
+/// # Purpose
+/// This function is designed for edge triangulation (from `path_triangulation.rs`) and
+/// provides the edges that can be further used for face triangulation.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::{Point, Segment, split_polygon_on_repeated_edges};
+///
+/// let polygon = vec![
+///     Point::new(0.0, 0.0),
+///     Point::new(3.0, 0.0),
+///     Point::new(3.0, 3.0),
+///     Point::new(0.0, 3.0),
+///     Point::new(0.0, 0.0),
+///     Point::new(1.0, 1.0),
+///     Point::new(2.0, 1.0),
+///     Point::new(2.0, 2.0),
+///     Point::new(1.0, 2.0),
+///     Point::new(1.0, 1.0),
+/// ];
+///
+/// let (polygons, edges) = split_polygon_on_repeated_edges(&polygon);
+///
+/// assert_eq!(polygons.len(), 2); // The polygon is split into two disjoint polygons.
+/// assert_eq!(edges.len(), 8); // Deduplicated edges used for splitting.
+/// ```
+#[inline]
+pub fn split_polygon_on_repeated_edges(polygon: &[Point]) -> (Vec<Vec<Point>>, Vec<Segment>) {
+    let edges_dedup = calc_dedup_edges(&[polygon.to_vec()]);
+    let mut result = Vec::new();
+
+    // Convert deduped edges to HashSet for efficient lookup
+    let edges_set: HashSet<Segment> = edges_dedup.clone().into_iter().collect();
+    let mut edges_map: HashMap<Point, GraphNode> = HashMap::new();
+
+    // Build edges map from consecutive points
+    for window in polygon.windows(2) {
+        let segment = Segment::new(window[0], window[1]);
+        if edges_set.contains(&segment) {
+            edges_map
+                .entry(window[0])
+                .or_default()
+                .edges
+                .push(window[1]);
+        }
+    }
+
+    // Handle the edge between last and first point
+    if let (Some(back), Some(front)) = (polygon.last(), polygon.first()) {
+        let segment = Segment::new(*back, *front);
+        if edges_set.contains(&segment) {
+            edges_map.entry(*back).or_default().edges.push(*front);
+        }
+    }
+
+    // Process all edges
+    let mut edges_to_process: Vec<_> = edges_map.keys().cloned().collect();
+    while let Some(start_point) = edges_to_process.pop() {
+        if let Some(edge) = edges_map.get_mut(&start_point) {
+            if edge.visited {
+                continue;
+            }
+
+            edge.visited = true;
+            let mut new_polygon = vec![start_point];
+            let mut current_point = start_point;
+
+            // Follow the edge chain
+            while let Some(node) = edges_map.get_mut(&current_point) {
+                if node.sub_index >= node.edges.len() {
+                    break;
+                }
+
+                let next_point = node.edges[node.sub_index];
+                node.sub_index += 1;
+
+                if let Some(next_node) = edges_map.get_mut(&next_point) {
+                    next_node.visited = true;
+                }
+
+                new_polygon.push(next_point);
+                current_point = next_point;
+            }
+
+            // Remove duplicate points at the start/end
+            while new_polygon.len() > 1 && new_polygon.first() == new_polygon.last() {
+                new_polygon.pop();
+            }
+
+            result.push(new_polygon);
+        }
+    }
+
+    (result, edges_dedup)
 }
