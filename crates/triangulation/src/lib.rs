@@ -1,3 +1,4 @@
+pub mod intersection;
 pub mod path_triangulation;
 pub mod point;
 
