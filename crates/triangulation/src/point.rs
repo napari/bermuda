@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 
 pub(crate) type Coord = f32;
 pub(crate) type Index = usize;
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
     pub x: Coord,
     pub y: Coord,
@@ -14,6 +14,9 @@ pub struct Point {
 impl Point {
     pub fn new(x: Coord, y: Coord) -> Self {
         Self { x, y }
+    }
+    pub fn new_i(x: i32, y: i32) -> Self {
+        Self::new(x as f32, y as f32)
     }
 
     pub fn add(&self, other: &Point) -> Vector {
@@ -35,12 +38,6 @@ impl Point {
             x: self.x + vector.x,
             y: self.y + vector.y,
         }
-    }
-}
-
-impl PartialEq for Point {
-    fn eq(&self, other: &Self) -> bool {
-        self.x == other.x && self.y == other.y
     }
 }
 
@@ -191,6 +188,14 @@ impl Segment {
                 top: p1,
             }
         }
+    }
+
+    pub fn new_i(p1: (i32, i32), p2: (i32, i32)) -> Self {
+        Self::new(Point::new_i(p1.0, p1.1), Point::new_i(p2.0, p2.1))
+    }
+
+    pub fn new_f(p1: (f32, f32), p2: (f32, f32)) -> Self {
+        Self::new(Point::new(p1.0, p1.1), Point::new(p2.0, p2.1))
     }
 
     pub fn is_horizontal(&self) -> bool {
