@@ -3,6 +3,7 @@
 //! These algorithms are designed for performance when working with polygons.
 
 pub mod monotone_polygon;
+pub mod intersection;
 pub mod path_triangulation;
 pub mod point;
 
