@@ -277,6 +277,23 @@ impl Ord for Segment {
 }
 
 #[derive(Debug, Clone)]
+/// Represents a triangle using indices of its three vertices.
+///
+/// # Fields
+/// * `x` - The index of the first vertex.
+/// * `y` - The index of the second vertex.
+/// * `z` - The index of the third vertex.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::Triangle;
+///
+/// let triangle = Triangle::new(0, 1, 2);
+/// assert_eq!(triangle.x, 0);
+/// assert_eq!(triangle.y, 1);
+/// assert_eq!(triangle.z, 2);
+/// ```
+
 pub struct Triangle {
     pub x: Index,
     pub y: Index,
@@ -286,6 +303,26 @@ pub struct Triangle {
 impl Triangle {
     pub fn new(x: Index, y: Index, z: Index) -> Self {
         Triangle { x, y, z }
+    }
+}
+
+/// Represents a triangle using three points.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PointTriangle {
+    pub p1: Point,
+    pub p2: Point,
+    pub p3: Point,
+}
+
+impl PointTriangle {
+    pub fn new(p1: Point, p2: Point, p3: Point) -> Self {
+        /// Check if points are ordered counter-clockwise.
+        if (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) < 0.0 {
+            /// Reorder points to be counter-clockwise.
+            Self { p1: p3, p2, p3: p1 }
+        } else {
+            Self { p1, p2, p3 }
+        }
     }
 }
 
