@@ -93,20 +93,14 @@ fn test_find_intersection_collinear_segments() {
             &Segment::new_i((0, 0), (2, 0)),
             &Segment::new_i((1, 0), (3, 0))
         ),
-        intersection::Intersection::CollinearWithOverlap(vec![
-            Point::new_i(1, 0),
-            Point::new_i(2, 0)
-        ])
+        intersection::Intersection::CollinearWithOverlap((Point::new_i(1, 0), Point::new_i(2, 0)))
     );
     assert_eq!(
         intersection::find_intersection(
             &Segment::new_i((0, 0), (2, 0)),
             &Segment::new_i((1, 0), (3, 0))
         ),
-        intersection::Intersection::CollinearWithOverlap(vec![
-            Point::new_i(1, 0),
-            Point::new_i(2, 0)
-        ])
+        intersection::Intersection::CollinearWithOverlap((Point::new_i(1, 0), Point::new_i(2, 0)))
     );
 }
 

@@ -209,7 +209,7 @@ pub enum Intersection {
     NoIntersection,
     PointIntersection(point::Point),
     CollinearNoOverlap,
-    CollinearWithOverlap(Vec<point::Point>),
+    CollinearWithOverlap((point::Point, point::Point)),
 }
 
 /// Finds the intersection point of two line segments, if it exists.
@@ -285,7 +285,7 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
         if res.len() == 1 {
             return Intersection::PointIntersection(res[0]);
         }
-        return Intersection::CollinearWithOverlap(res);
+        return Intersection::CollinearWithOverlap((res[0], res[1]));
     }
 
     let t = ((s2.top.x - s1.top.x) * (s2.bottom.y - s2.top.y)
