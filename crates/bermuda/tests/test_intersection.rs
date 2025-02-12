@@ -209,3 +209,70 @@ fn test_find_intersections_param(
 ) {
     assert_eq!(intersection::find_intersections(&segments), expected);
 }
+
+#[rstest]
+fn test_find_intersection_points_cross() {
+    /*
+    (1, 0) --- (1, 1)
+        \     /
+         \   /
+          \ /
+           X
+          / \
+         /   \
+        /     \
+    (0, 0) --- (0, 1)
+    */
+    let polygon = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.0, 1.0),
+    ]];
+
+    let result = intersection::find_intersection_points(&polygon);
+    let expected = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(0.0, 1.0),
+    ]];
+
+    assert_eq!(result, expected);
+}
+
+#[rstest]
+fn test_find_intersection_points_cross_intersect_in_point() {
+    /*
+    (1, 0) --- (1, 1)
+        \     /
+         \   /
+          \ /
+           X
+          / \
+         /   \
+        /     \
+    (0, 0) --- (0, 1)
+    */
+    let polygon = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.0, 1.0),
+    ]];
+
+    let result = intersection::find_intersection_points(&polygon);
+    let expected = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(0.0, 1.0),
+    ]];
+
+    assert_eq!(result, expected);
+}
