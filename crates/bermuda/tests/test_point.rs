@@ -1,9 +1,6 @@
 use rstest::rstest;
 use std::collections::HashSet;
-use triangulation::point::{
-    calc_dedup_edges, orientation, split_polygon_on_repeated_edges, Orientation, Point, Segment,
-    Vector,
-};
+use triangulation::point::{calc_dedup_edges, orientation, Orientation, Point, Segment, Vector};
 
 #[rstest]
 fn test_segment_order() {
@@ -72,23 +69,6 @@ fn test_orientation(
     #[case] expected: Orientation,
 ) {
     assert_eq!(orientation(p, q, r), expected);
-}
-
-#[rstest]
-#[case::rectangle(vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)], 1, 4)]
-#[case::rectangle_in_rectangle(vec![Point::new(0.0, 0.0), Point::new(3.0, 0.0), Point::new(3.0, 3.0), Point::new(0.0, 3.0), Point::new(0.0, 0.0), Point::new(1.0, 1.0),
-    Point::new(2.0, 1.0),
-    Point::new(2.0, 2.0),
-    Point::new(1.0, 2.0),
-    Point::new(1.0, 1.0),], 2, 8)]
-fn test_split_polygon_on_repeated_edges(
-    #[case] polygon: Vec<Point>,
-    #[case] polygon_count: usize,
-    #[case] edge_count: usize,
-) {
-    let (polygons, edges) = split_polygon_on_repeated_edges(&polygon);
-    assert_eq!(polygons.len(), polygon_count);
-    assert_eq!(edges.len(), edge_count);
 }
 
 #[rstest]
