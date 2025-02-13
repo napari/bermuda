@@ -278,18 +278,18 @@ fn test_find_intersection_points_cross_intersect_in_point() {
 }
 
 #[rstest]
-#[case::rectangle(vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)], 1, 4)]
-#[case::rectangle_in_rectangle(vec![Point::new(0.0, 0.0), Point::new(3.0, 0.0), Point::new(3.0, 3.0), Point::new(0.0, 3.0), Point::new(0.0, 0.0), Point::new(1.0, 1.0),
+#[case::rectangle(vec![vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)]], 1, 4)]
+#[case::rectangle_in_rectangle(vec![vec![Point::new(0.0, 0.0), Point::new(3.0, 0.0), Point::new(3.0, 3.0), Point::new(0.0, 3.0), Point::new(0.0, 0.0), Point::new(1.0, 1.0),
     Point::new(2.0, 1.0),
     Point::new(2.0, 2.0),
     Point::new(1.0, 2.0),
-    Point::new(1.0, 1.0),], 2, 8)]
+    Point::new(1.0, 1.0),]], 2, 8)]
 fn test_split_polygon_on_repeated_edges(
-    #[case] polygon: Vec<Point>,
+    #[case] polygon_list: Vec<Vec<Point>>,
     #[case] polygon_count: usize,
     #[case] edge_count: usize,
 ) {
-    let (polygons, edges) = intersection::split_polygon_on_repeated_edges(&polygon);
+    let (polygons, edges) = intersection::split_polygons_on_repeated_edges(&polygon_list);
     assert_eq!(polygons.len(), polygon_count);
     assert_eq!(edges.len(), edge_count);
 }

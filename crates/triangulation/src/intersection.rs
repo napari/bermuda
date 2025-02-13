@@ -599,53 +599,60 @@ impl Default for GraphNode {
     }
 }
 
-/// Splits a polygon into multiple polygons based on repeated edges using a DFS graph traversal.
+/// Splits multiple polygons into smaller polygons based on edge intersections and repeated edges using a DFS graph traversal.
 ///
-/// This function identifies duplicated edges within the polygon and splits it into multiple
-/// disjoint polygonal components. The splitting is guided by the unique edges that are determined
-/// through a deduplication process. The function returns the resulting polygons and the list of
-/// deduplicated edges.
+/// This function performs two main operations:
+/// 1. Finds intersection points between edges of all input polygons and splits edges at these points
+/// 2. Identifies duplicated edges within the resulting polygons and splits them into multiple
+///    disjoint polygonal components
+///
+/// The splitting is guided by the unique edges that are determined through a deduplication process.
+/// All polygon intersections in the result will occur only at points, not along edges.
 ///
 /// # Arguments
-/// * `polygon` - A slice of `Point`s representing a polygon to be split.
+/// * `polygon_list` - A slice of vectors, where each vector contains `Point`s representing a polygon
 ///
 /// # Returns
 /// A tuple containing:
-/// * A `Vec<Vec<Point>>` representing the split polygons as individual vectors of points.
-/// * A `Vec<Segment>` containing the deduplicated list of edges used during splitting.
+/// * A `Vec<Vec<Point>>` representing the split polygons as individual vectors of points
+/// * A `Vec<Segment>` containing the deduplicated list of edges used during splitting
 ///
 /// # Purpose
 /// This function is designed for edge triangulation (from `path_triangulation.rs`) and
-/// provides the edges that can be further used for face triangulation.
+/// provides the edges that can be further used for face triangulation. It ensures that
+/// polygon intersections occur only at vertices, not along edges.
 ///
 /// # Examples
 /// ```
 /// use triangulation::point::{Point, Segment};
-/// use triangulation::intersection::split_polygon_on_repeated_edges;
+/// use triangulation::intersection::split_polygons_on_repeated_edges;
 ///
-/// let polygon = vec![
+/// // Create two intersecting rectangles
+/// let polygon1 = vec![
 ///     Point::new(0.0, 0.0),
-///     Point::new(3.0, 0.0),
-///     Point::new(3.0, 3.0),
-///     Point::new(0.0, 3.0),
-///     Point::new(0.0, 0.0),
-///     Point::new(1.0, 1.0),
-///     Point::new(2.0, 1.0),
+///     Point::new(2.0, 0.0),
 ///     Point::new(2.0, 2.0),
-///     Point::new(1.0, 2.0),
-///     Point::new(1.0, 1.0),
+///     Point::new(0.0, 2.0),
 /// ];
 ///
-/// let (polygons, edges) = split_polygon_on_repeated_edges(&polygon);
+/// let polygon2 = vec![
+///     Point::new(1.0, 1.0),
+///     Point::new(3.0, 1.0),
+///     Point::new(3.0, 3.0),
+///     Point::new(1.0, 3.0),
+/// ];
 ///
-/// assert_eq!(polygons.len(), 2); // The polygon is split into two disjoint polygons.
-/// assert_eq!(edges.len(), 8); // Deduplicated edges used for splitting.
+/// let (polygons, edges) = split_polygons_on_repeated_edges(&vec![polygon1, polygon2]);
+///
+/// // The polygons are split at intersection points
+/// assert!(polygons.len() > 2); // More polygons after splitting at intersections
 /// ```
 #[inline]
-pub fn split_polygon_on_repeated_edges(
-    polygon: &[point::Point],
+pub fn split_polygons_on_repeated_edges(
+    polygon_list: &[Vec<point::Point>],
 ) -> (Vec<Vec<point::Point>>, Vec<point::Segment>) {
-    let edges_dedup = point::calc_dedup_edges(&[polygon.to_vec()]);
+    let intersected = find_intersection_points(polygon_list);
+    let edges_dedup = point::calc_dedup_edges(&intersected);
     let mut result = Vec::new();
 
     // Convert deduped edges to HashSet for efficient lookup
@@ -653,22 +660,24 @@ pub fn split_polygon_on_repeated_edges(
     let mut edges_map: HashMap<point::Point, GraphNode> = HashMap::new();
 
     // Build edges map from consecutive points
-    for window in polygon.windows(2) {
-        let segment = point::Segment::new(window[0], window[1]);
-        if edges_set.contains(&segment) {
-            edges_map
-                .entry(window[0])
-                .or_default()
-                .edges
-                .push(window[1]);
+    for polygon in intersected.iter() {
+        for window in polygon.windows(2) {
+            let segment = point::Segment::new(window[0], window[1]);
+            if edges_set.contains(&segment) {
+                edges_map
+                    .entry(window[0])
+                    .or_default()
+                    .edges
+                    .push(window[1]);
+            }
         }
-    }
 
-    // Handle the edge between last and first point
-    if let (Some(back), Some(front)) = (polygon.last(), polygon.first()) {
-        let segment = point::Segment::new(*back, *front);
-        if edges_set.contains(&segment) {
-            edges_map.entry(*back).or_default().edges.push(*front);
+        // Handle the edge between last and first point
+        if let (Some(back), Some(front)) = (polygon.last(), polygon.first()) {
+            let segment = point::Segment::new(*back, *front);
+            if edges_set.contains(&segment) {
+                edges_map.entry(*back).or_default().edges.push(*front);
+            }
         }
     }
 
