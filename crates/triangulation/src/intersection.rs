@@ -543,6 +543,8 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
     // Create new polygons with intersection points
     let mut new_polygons_list = Vec::with_capacity(polygon_list.len());
 
+    let mut polygon_shift = 0;
+
     for polygon in polygon_list {
         let mut new_polygon = Vec::with_capacity(polygon.len() * 2);
         new_polygon.push(polygon[0]);
@@ -553,7 +555,7 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
                 new_polygon.push(point);
             }
 
-            if let Some(new_points) = intersections_points.get(&i) {
+            if let Some(new_points) = intersections_points.get(&(i + polygon_shift)) {
                 if new_points[0].1 == point {
                     // Forward iteration
                     for (_, intersection_point) in new_points.iter().skip(1) {
@@ -578,6 +580,7 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
         }
 
         new_polygons_list.push(new_polygon);
+        polygon_shift += polygon.len();
     }
 
     new_polygons_list
@@ -669,6 +672,11 @@ pub fn split_polygons_on_repeated_edges(
                     .or_default()
                     .edges
                     .push(window[1]);
+                // edges_map
+                //     .entry(window[1])
+                //     .or_default()
+                //     .edges
+                //     .push(window[0]);
             }
         }
 

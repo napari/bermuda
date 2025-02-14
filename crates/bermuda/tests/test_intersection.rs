@@ -278,6 +278,38 @@ fn test_find_intersection_points_cross_intersect_in_point() {
 }
 
 #[rstest]
+fn test_find_intersection_points_overleap_edge() {
+    let polygon_list = vec![
+        vec![
+            Point::new(0.0, 0.0),
+            Point::new(3.0, 0.0),
+            Point::new(3.0, 3.0),
+            Point::new(0.0, 3.0),
+        ],
+        vec![
+            Point::new(1.0, 0.0),
+            Point::new(2.0, 0.0),
+            Point::new(2.0, 1.0),
+            Point::new(1.0, 1.0),
+        ],
+    ];
+    let result = intersection::find_intersection_points(&polygon_list);
+    assert_eq!(result.len(), 2);
+    assert_eq!(
+        result[0],
+        vec![
+            Point::new(0.0, 0.0),
+            Point::new(1.0, 0.0),
+            Point::new(2.0, 0.0),
+            Point::new(3.0, 0.0),
+            Point::new(3.0, 3.0),
+            Point::new(0.0, 3.0)
+        ]
+    );
+    assert_eq!(result[1], polygon_list[1]);
+}
+
+#[rstest]
 #[case::rectangle(vec![vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)]], 1, 4)]
 #[case::rectangle_in_rectangle(vec![vec![Point::new(0.0, 0.0), Point::new(3.0, 0.0), Point::new(3.0, 3.0), Point::new(0.0, 3.0), Point::new(0.0, 0.0), Point::new(1.0, 1.0),
     Point::new(2.0, 1.0),
@@ -293,3 +325,14 @@ fn test_split_polygon_on_repeated_edges(
     assert_eq!(polygons.len(), polygon_count);
     assert_eq!(edges.len(), edge_count);
 }
+
+// #[rstest]
+// fn test_split_polygon_on_repeated_edges_merge_two_polygons() {
+//     let polygon_list = vec![
+//         vec![Point::new(0.0, 0.0), Point::new(3.0, 0.0), Point::new(3.0, 3.0), Point::new(0.0, 3.0)],
+//         vec![Point::new(1.0, 0.0), Point::new(2.0, 0.0), Point::new(2.0, 1.0), Point::new(1.0, 1.0)],
+//     ];
+//     let (polygons, edges) = intersection::split_polygons_on_repeated_edges(&polygon_list);
+//     assert_eq!(polygons.len(), 1);
+//     assert_eq!(edges.len(), 8);
+// }
