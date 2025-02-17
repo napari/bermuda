@@ -326,13 +326,23 @@ fn test_split_polygon_on_repeated_edges(
     assert_eq!(edges.len(), edge_count);
 }
 
-// #[rstest]
-// fn test_split_polygon_on_repeated_edges_merge_two_polygons() {
-//     let polygon_list = vec![
-//         vec![Point::new(0.0, 0.0), Point::new(3.0, 0.0), Point::new(3.0, 3.0), Point::new(0.0, 3.0)],
-//         vec![Point::new(1.0, 0.0), Point::new(2.0, 0.0), Point::new(2.0, 1.0), Point::new(1.0, 1.0)],
-//     ];
-//     let (polygons, edges) = intersection::split_polygons_on_repeated_edges(&polygon_list);
-//     assert_eq!(polygons.len(), 1);
-//     assert_eq!(edges.len(), 8);
-// }
+#[rstest]
+fn test_split_polygon_on_repeated_edges_merge_two_polygons() {
+    let polygon_list = vec![
+        vec![
+            Point::new(0.0, 0.0),
+            Point::new(3.0, 0.0),
+            Point::new(3.0, 3.0),
+            Point::new(0.0, 3.0),
+        ],
+        vec![
+            Point::new(1.0, 0.0),
+            Point::new(2.0, 0.0),
+            Point::new(2.0, 1.0),
+            Point::new(1.0, 1.0),
+        ],
+    ];
+    let (polygons, edges) = intersection::split_polygons_on_repeated_edges(&polygon_list);
+    assert_eq!(polygons.len(), 1);
+    assert_eq!(edges.len(), 8);
+}
