@@ -633,9 +633,15 @@ impl Default for GraphNode {
 /// // Create two intersecting rectangles
 /// let polygon1 = vec![
 ///     Point::new(0.0, 0.0),
-///     Point::new(2.0, 0.0),
+///     Point::new(3.0, 0.0),
+///     Point::new(3.0, 3.0),
+///     Point::new(0.0, 3.0),
+///     Point::new(0.0, 0.0),
+///     Point::new(1.0, 1.0),
+///     Point::new(1.0, 2.0),
 ///     Point::new(2.0, 2.0),
-///     Point::new(0.0, 2.0),
+///     Point::new(2.0, 1.0),
+///     Point::new(1.0, 1.0)
 /// ];
 ///
 /// let polygon2 = vec![
