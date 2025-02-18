@@ -1,6 +1,6 @@
 use crate::point;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct PathTriangulation {
     pub triangles: Vec<point::Triangle>,
     pub centers: Vec<point::Point>,
@@ -69,7 +69,7 @@ fn add_triangles_for_join(
         mitter = (p1_p2_diff_norm - p2_p3_diff_norm) * scale_factor * 0.5;
     }
 
-    if bevel || cos_angle < cos_limit as f32 {
+    if bevel || cos_angle < cos_limit {
         triangles.centers.push(p2);
         triangles
             .triangles
@@ -176,7 +176,7 @@ pub fn triangulate_path_edge(
         result
             .offsets
             .push(point::Vector::new(norm_diff.y * 0.5, -norm_diff.x * 0.5));
-        result.offsets.push(-result.offsets.last().unwrap().clone());
+        result.offsets.push(-*result.offsets.last().unwrap());
         result.triangles.push(point::Triangle::new(0, 1, 2));
         result.triangles.push(point::Triangle::new(1, 2, 3));
     }
@@ -214,7 +214,7 @@ pub fn triangulate_path_edge(
         result
             .offsets
             .push(point::Vector::new(norm_diff.y * 0.5, -norm_diff.x * 0.5));
-        result.offsets.push(-result.offsets.last().unwrap().clone());
+        result.offsets.push(-*result.offsets.last().unwrap());
     }
 
     result.fix_triangle_orientation();
