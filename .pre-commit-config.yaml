@@ -6,6 +6,7 @@ exclude: |
 ci:
   skip:
     - cargo-fmt
+    - cargo-clippy
 
 repos:
   - repo: https://github.com/abravalheri/validate-pyproject
