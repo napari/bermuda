@@ -3,6 +3,8 @@ use pyo3::prelude::*;
 
 use triangulation::{triangulate_path_edge as triangulate_path_edge_rust, Point};
 
+type EdgeTriangulation = PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>)>;
+
 /// Determines the triangulation of a path in 2D
 ///
 /// Parameters
@@ -31,13 +33,13 @@ use triangulation::{triangulate_path_edge as triangulate_path_edge_rust, Point};
 ///     triangles of the triangulation
 #[pyfunction]
 #[pyo3(signature = (path, closed=false, limit=3.0, bevel=false))]
-fn triangulate_path_edge<'py>(
+fn triangulate_path_edge(
     py: Python<'_>,
     path: PyReadonlyArray2<'_, f32>,
     closed: Option<bool>,
     limit: Option<f32>,
     bevel: Option<bool>,
-) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>)> {
+) -> EdgeTriangulation {
     // Convert the numpy array into a rust compatible representations which is a vector of points.
     let path_: Vec<Point> = path
         .as_array()
@@ -59,8 +61,7 @@ fn triangulate_path_edge<'py>(
     let triangle_data: Vec<u32> = result
         .triangles
         .iter()
-        .map(|t| [t.x as u32, t.y as u32, t.z as u32])
-        .flatten()
+        .flat_map(|t| [t.x as u32, t.y as u32, t.z as u32])
         .collect();
 
     // Convert back to numpy array ((M-2)x3) if triangles is not empty, otherwise create empty array (0x3).
@@ -70,18 +71,8 @@ fn triangulate_path_edge<'py>(
         PyArray2::<u32>::zeros(py, [0, 3], false)
     };
 
-    let flat_centers: Vec<f32> = result
-        .centers
-        .iter()
-        .map(|p| [p.x, p.y])
-        .flatten()
-        .collect();
-    let flat_offsets: Vec<f32> = result
-        .offsets
-        .iter()
-        .map(|v| [v.x, v.y])
-        .flatten()
-        .collect();
+    let flat_centers: Vec<f32> = result.centers.iter().flat_map(|p| [p.x, p.y]).collect();
+    let flat_offsets: Vec<f32> = result.offsets.iter().flat_map(|v| [v.x, v.y]).collect();
 
     Ok((
         PyArray::from_vec(py, flat_centers)

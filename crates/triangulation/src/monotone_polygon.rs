@@ -245,13 +245,13 @@ pub fn triangulate_monotone_polygon(polygon: &MonotonePolygon) -> Vec<PointTrian
     stack.push_back(points[1].0);
     let mut side = &points[1].1;
 
-    for i in 2..points.len() {
-        if *side == points[i].1 {
-            build_triangles_current_edge(&mut stack, &mut result, points[i].0, *side);
+    for (p, s) in points.iter().skip(2) {
+        if *side == *s {
+            build_triangles_current_edge(&mut stack, &mut result, *p, *side);
         } else {
-            build_triangles_opposite_edge(&mut stack, &mut result, points[i].0);
+            build_triangles_opposite_edge(&mut stack, &mut result, *p);
         }
-        side = &points[i].1;
+        side = s;
     }
 
     result
