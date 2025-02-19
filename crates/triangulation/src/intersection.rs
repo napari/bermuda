@@ -279,7 +279,7 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
         // remove duplicates from the collinear intersection case
         res.sort();
         res.dedup();
-        if res.len() == 0 {
+        if res.is_empty() {
             return Intersection::CollinearNoOverlap;
         }
         if res.len() == 1 {
