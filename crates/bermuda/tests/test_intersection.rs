@@ -308,11 +308,22 @@ fn test_find_intersection_points_overleap_edge() {
 
 #[rstest]
 #[case::rectangle(vec![vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)]], 1, 4)]
-#[case::rectangle_in_rectangle(vec![vec![Point::new(0.0, 0.0), Point::new(3.0, 0.0), Point::new(3.0, 3.0), Point::new(0.0, 3.0), Point::new(0.0, 0.0), Point::new(1.0, 1.0),
-    Point::new(2.0, 1.0),
-    Point::new(2.0, 2.0),
-    Point::new(1.0, 2.0),
-    Point::new(1.0, 1.0),]], 2, 8)]
+#[case::rectangle_in_rectangle(
+    vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(3.0, 0.0),
+        Point::new(3.0, 3.0),
+        Point::new(0.0, 3.0),
+        Point::new(0.0, 0.0),
+        Point::new(1.0, 1.0),
+        Point::new(2.0, 1.0),
+        Point::new(2.0, 2.0),
+        Point::new(1.0, 2.0),
+        Point::new(1.0, 1.0),
+    ]],
+    2,
+    8
+)]
 fn test_split_polygon_on_repeated_edges(
     #[case] polygon_list: Vec<Vec<Point>>,
     #[case] polygon_count: usize,
