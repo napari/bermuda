@@ -59,13 +59,10 @@ fn test_do_intersect_ne(#[case] s1: Segment, #[case] s2: Segment) {
 
 #[rstest]
 fn test_do_intersect_parallel_segments() {
-    assert_ne!(
-        intersection::do_intersect(
-            &Segment::new(Point::new_i(0, -1), Point::new_i(0, 1)),
-            &Segment::new(Point::new_i(1, -2), Point::new_i(1, 1))
-        ),
-        true
-    )
+    assert!(!intersection::do_intersect(
+        &Segment::new(Point::new_i(0, -1), Point::new_i(0, 1)),
+        &Segment::new(Point::new_i(1, -2), Point::new_i(1, 1))
+    ))
 }
 
 #[rstest]

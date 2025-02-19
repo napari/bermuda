@@ -470,7 +470,6 @@ pub fn calc_edges(polygon_list: &[Vec<point::Point>]) -> Vec<point::Segment> {
 /// The function preserves the order of the original polygons but may add additional points
 /// where intersections occur. The resulting polygons maintain their closed nature
 /// (first point equals last point if that was true in the input).
-
 pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<point::Point>> {
     // Calculate edges from the polygon list
     let edges = calc_edges(polygon_list);
@@ -549,14 +548,13 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
         let mut new_polygon = Vec::with_capacity(polygon.len() * 2);
         new_polygon.push(polygon[0]);
 
-        for i in 0..polygon.len() {
-            let point = polygon[i];
-            if new_polygon.last() != Some(&point) {
-                new_polygon.push(point);
+        for (i, point) in polygon.iter().enumerate() {
+            if new_polygon.last() != Some(point) {
+                new_polygon.push(*point);
             }
 
             if let Some(new_points) = intersections_points.get(&(i + polygon_shift)) {
-                if new_points[0].1 == point {
+                if new_points[0].1 == *point {
                     // Forward iteration
                     for (_, intersection_point) in new_points.iter().skip(1) {
                         if new_polygon.last() != Some(intersection_point) {
@@ -586,20 +584,11 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
     new_polygons_list
 }
 
+#[derive(Default)]
 struct GraphNode {
     edges: Vec<point::Point>,
     visited: bool,
     sub_index: usize,
-}
-
-impl Default for GraphNode {
-    fn default() -> Self {
-        GraphNode {
-            edges: Vec::new(),
-            visited: false,
-            sub_index: 0,
-        }
-    }
 }
 
 /// Splits multiple polygons into smaller polygons based on edge intersections and repeated edges using a DFS graph traversal.
