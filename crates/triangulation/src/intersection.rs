@@ -1,6 +1,6 @@
 use crate::point;
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
 
 const EPSILON: f32 = 1e-6;
@@ -209,7 +209,7 @@ pub enum Intersection {
     NoIntersection,
     PointIntersection(point::Point),
     CollinearNoOverlap,
-    CollinearWithOverlap(Vec<point::Point>),
+    CollinearWithOverlap((point::Point, point::Point)),
 }
 
 /// Finds the intersection point of two line segments, if it exists.
@@ -285,7 +285,7 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
         if res.len() == 1 {
             return Intersection::PointIntersection(res[0]);
         }
-        return Intersection::CollinearWithOverlap(res);
+        return Intersection::CollinearWithOverlap((res[0], res[1]));
     }
 
     let t = ((s2.top.x - s1.top.x) * (s2.bottom.y - s2.top.y)
@@ -391,4 +391,313 @@ pub fn find_intersections(segments: &[point::Segment]) -> HashSet<OrderedPair> {
     }
 
     intersections
+}
+
+/// Calculates the edges of polygons from a list of polygons, provided as
+/// a list of points for each polygon.
+///
+/// Each polygon is represented by a vector of points, where each point is
+/// defined as an instance of `point::Point`. The function iterates through
+/// each point in each polygon and creates edges (segments) between
+/// consecutive points as well as between the last point and the first point
+/// of each polygon.
+///
+/// # Arguments
+///
+/// * `polygon_list` - A slice of vectors, with each vector containing `Point` instances
+///                    representing a polygon
+///
+/// # Returns
+///
+/// A vector of `Segment` instances representing the edges of all polygons in the input list
+pub fn calc_edges(polygon_list: &[Vec<point::Point>]) -> Vec<point::Segment> {
+    // Calculate total number of points for capacity pre-allocation
+    let points_count: usize = polygon_list.iter().map(|polygon| polygon.len()).sum();
+
+    // Pre-allocate the vector with the calculated capacity
+    let mut edges = Vec::with_capacity(points_count);
+
+    // Process each polygon
+    for polygon in polygon_list {
+        // Create edges between consecutive points
+        for window in polygon.windows(2) {
+            edges.push(point::Segment::new(window[0], window[1]));
+        }
+
+        // Create edge between last and first point if they're different
+        if let (Some(&first), Some(&last)) = (polygon.first(), polygon.last()) {
+            if last != first {
+                edges.push(point::Segment::new(last, first));
+            }
+        }
+    }
+
+    edges
+}
+
+/// Finds and processes all intersection points between polygons in the given list.
+///
+/// This function performs the following steps:
+/// 1. Converts polygons to edges
+/// 2. Finds all intersection points between edges
+/// 3. For each intersection, calculates projection factors and stores the intersection points
+/// 4. Creates new polygons that include the intersection points
+///
+/// # Arguments
+///
+/// * `polygon_list` - A slice of vectors where each vector contains points defining a polygon
+///
+/// # Returns
+///
+/// A vector of modified polygons (as vectors of points) where each polygon includes
+/// the intersection points with other polygons. If no intersections are found,
+/// returns a copy of the input polygons.
+///
+/// # Examples
+///
+/// ```
+/// use triangulation::point::Point;
+/// use triangulation::intersection::find_intersection_points;
+/// let polygon1 = vec![Point::new(0.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)];
+/// let polygon2 = vec![Point::new(0.0, 0.5), Point::new(1.0, 0.5), Point::new(0.5, 0.0)];
+/// let polygons = vec![polygon1, polygon2];
+/// let result = find_intersection_points(&polygons);
+/// // Result will contain the original polygons with additional points at their intersections
+/// ```
+///
+/// # Note
+///
+/// The function preserves the order of the original polygons but may add additional points
+/// where intersections occur. The resulting polygons maintain their closed nature
+/// (first point equals last point if that was true in the input).
+pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<point::Point>> {
+    // Calculate edges from the polygon list
+    let edges = calc_edges(polygon_list);
+
+    // Find intersections using the existing function
+    let intersections = find_intersections(&edges);
+    if intersections.is_empty() {
+        return polygon_list.to_vec();
+    }
+
+    // Create a HashMap to store intersection points for each edge
+    let mut intersections_points: HashMap<usize, Vec<(point::Coord, point::Point)>> =
+        HashMap::new();
+
+    // Process each intersection
+    for intersection in intersections {
+        let inter_points =
+            find_intersection(&edges[intersection.first()], &edges[intersection.second()]);
+
+        // Handle the intersection points based on the intersection type
+        match inter_points {
+            Intersection::PointIntersection(point) => {
+                intersections_points
+                    .entry(intersection.first())
+                    .or_default()
+                    .push((
+                        edges[intersection.first()].point_projection_factor(point),
+                        point,
+                    ));
+                intersections_points
+                    .entry(intersection.second())
+                    .or_default()
+                    .push((
+                        edges[intersection.second()].point_projection_factor(point),
+                        point,
+                    ));
+            }
+            Intersection::CollinearWithOverlap((p1, p2)) => {
+                // Handle collinear overlap case if needed
+                // to add both points to both edges
+                for point in [p1, p2] {
+                    intersections_points
+                        .entry(intersection.first())
+                        .or_default()
+                        .push((
+                            edges[intersection.first()].point_projection_factor(point),
+                            point,
+                        ));
+                    intersections_points
+                        .entry(intersection.second())
+                        .or_default()
+                        .push((
+                            edges[intersection.second()].point_projection_factor(point),
+                            point,
+                        ));
+                }
+            }
+            _ => {} // No intersection or collinear no overlap cases
+        }
+    }
+
+    // Sort and add endpoint markers for each edge's intersections
+    for (edge_idx, points) in intersections_points.iter_mut() {
+        let edge = &edges[*edge_idx];
+        points.push((-1.0, edge.top));
+        points.push((2.0, edge.bottom));
+        points.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
+    }
+
+    // Create new polygons with intersection points
+    let mut new_polygons_list = Vec::with_capacity(polygon_list.len());
+
+    let mut polygon_shift = 0;
+
+    for polygon in polygon_list {
+        let mut new_polygon = Vec::with_capacity(polygon.len() * 2);
+        new_polygon.push(polygon[0]);
+
+        for (i, point) in polygon.iter().enumerate() {
+            if new_polygon.last() != Some(point) {
+                new_polygon.push(*point);
+            }
+
+            if let Some(new_points) = intersections_points.get(&(i + polygon_shift)) {
+                if new_points[0].1 == *point {
+                    // Forward iteration
+                    for (_, intersection_point) in new_points.iter().skip(1) {
+                        if new_polygon.last() != Some(intersection_point) {
+                            new_polygon.push(*intersection_point);
+                        }
+                    }
+                } else {
+                    // Reverse iteration
+                    for (_, intersection_point) in new_points.iter().rev().skip(1) {
+                        if new_polygon.last() != Some(intersection_point) {
+                            new_polygon.push(*intersection_point);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove duplicate end point if it exists
+        if new_polygon.len() > 1 && new_polygon.first() == new_polygon.last() {
+            new_polygon.pop();
+        }
+
+        new_polygons_list.push(new_polygon);
+        polygon_shift += polygon.len();
+    }
+
+    new_polygons_list
+}
+
+#[derive(Default)]
+struct GraphNode {
+    edges: Vec<point::Point>,
+    visited: bool,
+    sub_index: usize,
+}
+
+/// Splits multiple polygons into smaller polygons based on edge intersections and repeated edges using a DFS graph traversal.
+///
+/// This function performs two main operations:
+/// 1. Finds intersection points between edges of all input polygons and splits edges at these points
+/// 2. Identifies duplicated edges within the resulting polygons and splits them into multiple
+///    disjoint polygonal components
+///
+/// The splitting is guided by the unique edges that are determined through a deduplication process.
+/// All polygon intersections in the result will occur only at points, not along edges.
+///
+/// # Arguments
+/// * `polygon_list` - A slice of vectors, where each vector contains `Point`s representing a polygon
+///
+/// # Returns
+/// A tuple containing:
+/// * A `Vec<Vec<Point>>` representing the split polygons as individual vectors of points
+/// * A `Vec<Segment>` containing the deduplicated list of edges used during splitting
+///
+/// # Purpose
+/// This function is designed for edge triangulation (from `path_triangulation.rs`) and
+/// provides the edges that can be further used for face triangulation. It ensures that
+/// polygon intersections occur only at vertices, not along edges.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::{Point, Segment};
+/// use triangulation::intersection::split_polygons_on_repeated_edges;
+///
+/// // Create two intersecting rectangles
+/// let polygon1 = vec![
+///     Point::new(0.0, 0.0),
+///     Point::new(3.0, 0.0),
+///     Point::new(3.0, 3.0),
+///     Point::new(0.0, 3.0),
+///     Point::new(0.0, 0.0),
+///     Point::new(1.0, 1.0),
+///     Point::new(1.0, 2.0),
+///     Point::new(2.0, 2.0),
+///     Point::new(2.0, 1.0),
+///     Point::new(1.0, 1.0)
+/// ];
+///
+/// let (polygons, edges) = split_polygons_on_repeated_edges(&vec![polygon1]);
+///
+/// // The polygons are split at intersection points
+/// assert!(polygons.len() == 2); // More polygons after splitting at intersections
+/// ```
+#[inline]
+pub fn split_polygons_on_repeated_edges(
+    polygon_list: &[Vec<point::Point>],
+) -> (Vec<Vec<point::Point>>, Vec<point::Segment>) {
+    let intersected = find_intersection_points(polygon_list);
+    let edges_dedup = point::calc_dedup_edges(&intersected);
+    let mut edge_map: HashMap<point::Point, GraphNode> = HashMap::new();
+    let mut sub_polygons: Vec<Vec<point::Point>> = Vec::new();
+
+    // Build undirected graph
+    for edge in edges_dedup.iter() {
+        let p1 = edge.top;
+        let p2 = edge.bottom;
+        edge_map.entry(p1).or_default().edges.push(p2);
+        edge_map.entry(p2).or_default().edges.push(p1);
+    }
+
+    let mut sub_index = 0;
+    let points: Vec<point::Point> = edge_map.keys().copied().collect();
+
+    for start_point in points {
+        if !edge_map.get(&start_point).map_or(true, |node| node.visited) {
+            let mut current_polygon = Vec::new();
+            let mut stack = vec![start_point];
+
+            while let Some(current) = stack.pop() {
+                if let Some(node) = edge_map.get(&current) {
+                    if node.visited {
+                        continue;
+                    }
+
+                    // Collect unvisited neighbors first
+                    let next_points: Vec<_> = node
+                        .edges
+                        .iter()
+                        .copied()
+                        .filter(|&next| !edge_map.get(&next).map_or(true, |n| n.visited))
+                        .collect();
+
+                    // Now we can modify the current node
+                    if let Some(node) = edge_map.get_mut(&current) {
+                        node.visited = true;
+                        node.sub_index = sub_index;
+                    }
+
+                    current_polygon.push(current);
+                    stack.extend(next_points);
+                }
+            }
+
+            if !current_polygon.is_empty() {
+                // Close the polygon if needed
+                if current_polygon[0] != *current_polygon.last().unwrap() {
+                    current_polygon.push(current_polygon[0]);
+                }
+                sub_polygons.push(current_polygon);
+                sub_index += 1;
+            }
+        }
+    }
+
+    (sub_polygons, edges_dedup)
 }

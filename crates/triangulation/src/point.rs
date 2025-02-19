@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -333,7 +334,7 @@ impl PointTriangle {
 /// * `p2` - The second point.
 ///
 /// # Returns
-/// Returns the distance between `p1` and `p2` as a `Coord`.
+/// The distance between `p1` and `p2` as a `Coord`.
 ///
 /// # Examples
 /// ```
@@ -405,4 +406,89 @@ pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
     } else {
         Orientation::CounterClockwise
     }
+}
+
+/// Calculates a deduplicated list of edges (as `Segment`s) from the input list of polygons.
+///
+/// This function processes a list of polygons (each represented as a vector of `Point`s)
+/// and generates a collection of unique `Segment`s that represent edges of the polygons.
+///
+/// If an edge appears more than once (e.g., due to multiple polygons sharing edges, or polygon with holes),
+/// the duplicates are deduplicated modulo 2 (ex. edge that appears 2, 4, 6 times is not returned,
+/// edges, that is present 1, 3, 99 times is returned once)
+///
+/// # Arguments
+/// * `polygon_list` - A slice of vectors, where each vector represents a polygon
+///   as a list of `Point`s.
+///
+/// # Returns
+/// A `Vec<Segment>` containing all edges deduplicated modulo 2.
+///
+/// # Examples
+/// ```
+/// use triangulation::point::{Point, Segment, calc_dedup_edges};
+///
+/// let polygon1 = vec![
+///     Point::new(0.0, 0.0),
+///     Point::new(1.0, 0.0),
+///     Point::new(1.0, 1.0),
+///     Point::new(0.0, 0.0),
+/// ];
+///
+/// let polygon2 = vec![
+///     Point::new(1.0, 0.0),
+///     Point::new(2.0, 0.0),
+///     Point::new(2.0, 1.0),
+///     Point::new(1.0, 0.0),
+/// ];
+///
+/// let edges = calc_dedup_edges(&[polygon1, polygon2]);
+/// assert_eq!(edges.len(), 6); // Deduplicated edges
+/// ```
+#[inline]
+pub fn calc_dedup_edges(polygon_list: &[Vec<Point>]) -> Vec<Segment> {
+    for (i, polygon) in polygon_list.iter().enumerate() {
+        if polygon.len() < 3 {
+            panic!("Polygon at index {} has fewer than 3 points", i);
+        }
+        // Check for collinearity of all points
+        if polygon.len() >= 3 {
+            let first_orientation = orientation(polygon[polygon.len() - 1], polygon[0], polygon[1])
+                == Orientation::Collinear;
+            let last_orientation = orientation(
+                polygon[polygon.len() - 2],
+                polygon[polygon.len() - 1],
+                polygon[0],
+            ) == Orientation::Collinear;
+            let all_collinear = polygon.windows(3).all(|window| {
+                orientation(window[0], window[1], window[2]) == Orientation::Collinear
+            });
+            if first_orientation && last_orientation && all_collinear {
+                panic!("All points in polygon at index {} are collinear", i);
+            }
+        }
+    }
+
+    let mut edges_set = HashSet::new();
+
+    for polygon in polygon_list {
+        // Process edges between consecutive points
+        for window in polygon.windows(2) {
+            let edge = Segment::new(window[0], window[1]);
+            if !edges_set.remove(&edge) {
+                edges_set.insert(edge);
+            }
+        }
+
+        // Process edge between last and first point if they're different
+        if let (Some(back), Some(front)) = (polygon.last(), polygon.first()) {
+            if back != front {
+                let edge = Segment::new(*back, *front);
+                if !edges_set.remove(&edge) {
+                    edges_set.insert(edge);
+                }
+            }
+        }
+    }
+    edges_set.into_iter().collect()
 }
