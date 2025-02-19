@@ -6,6 +6,7 @@ exclude: |
 ci:
   skip:
     - cargo-fmt
+    - cargo-clippy
 
 repos:
   - repo: https://github.com/abravalheri/validate-pyproject
@@ -23,6 +24,12 @@ repos:
       - id: cargo-fmt
         name: cargo fmt
         entry: cargo fmt --
+        language: system
+        types: [rust]
+        pass_filenames: false # This makes it a lot faster
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy -- -D warnings
         language: system
         types: [rust]
         pass_filenames: false # This makes it a lot faster

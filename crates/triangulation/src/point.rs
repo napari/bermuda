@@ -42,6 +42,7 @@ impl Point {
 
 impl Eq for Point {}
 
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for Point {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self.y == other.y {
@@ -259,6 +260,7 @@ impl PartialEq for Segment {
 
 impl Eq for Segment {}
 
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for Segment {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self.bottom == other.bottom {
@@ -292,7 +294,6 @@ impl Ord for Segment {
 /// assert_eq!(triangle.y, 1);
 /// assert_eq!(triangle.z, 2);
 /// ```
-
 pub struct Triangle {
     pub x: Index,
     pub y: Index,
