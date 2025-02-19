@@ -315,9 +315,9 @@ pub struct PointTriangle {
 
 impl PointTriangle {
     pub fn new(p1: Point, p2: Point, p3: Point) -> Self {
-        /// Check if points are ordered counter-clockwise.
+        // Check if points are ordered counter-clockwise.
         if (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) < 0.0 {
-            /// Reorder points to be counter-clockwise.
+            // Reorder points to be counter-clockwise.
             Self { p1: p3, p2, p3: p1 }
         } else {
             Self { p1, p2, p3 }
