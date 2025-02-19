@@ -412,6 +412,7 @@ pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
 ///
 /// This function processes a list of polygons (each represented as a vector of `Point`s)
 /// and generates a collection of unique `Segment`s that represent edges of the polygons.
+///
 /// If an edge appears more than once (e.g., due to multiple polygons sharing edges, or polygon with holes),
 /// the duplicates are deduplicated modulo 2 (ex. edge that appears 2, 4, 6 times is not returned,
 /// edges, that is present 1, 3, 99 times is returned once)
