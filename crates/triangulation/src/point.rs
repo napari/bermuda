@@ -447,6 +447,28 @@ pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
 /// ```
 #[inline]
 pub fn calc_dedup_edges(polygon_list: &[Vec<Point>]) -> Vec<Segment> {
+    for (i, polygon) in polygon_list.iter().enumerate() {
+        if polygon.len() < 3 {
+            panic!("Polygon at index {} has fewer than 3 points", i);
+        }
+        // Check for collinearity of all points
+        if polygon.len() >= 3 {
+            let first_orientation = orientation(polygon[polygon.len() - 1], polygon[0], polygon[1])
+                == Orientation::Collinear;
+            let last_orientation = orientation(
+                polygon[polygon.len() - 2],
+                polygon[polygon.len() - 1],
+                polygon[0],
+            ) == Orientation::Collinear;
+            let all_collinear = polygon.windows(3).all(|window| {
+                orientation(window[0], window[1], window[2]) == Orientation::Collinear
+            });
+            if first_orientation && last_orientation && all_collinear {
+                panic!("All points in polygon at index {} are collinear", i);
+            }
+        }
+    }
+
     let mut edges_set = HashSet::new();
 
     for polygon in polygon_list {
