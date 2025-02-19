@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::monotone_polygon::MonotonePolygon;
 use crate::point::{orientation, Index, Orientation, Point, Segment};
 use std::cell::RefCell;
@@ -11,7 +12,7 @@ pub struct Interval {
     last_seen: Point,
     left_segment: Segment,
     right_segment: Segment,
-    polygons_list: Vec<Box<MonotonePolygon>>,
+    polygons_list: Vec<MonotonePolygon>,
 }
 
 #[derive(Debug, Clone)]
@@ -117,14 +118,8 @@ impl Interval {
     }
 
     // Constructor with segments and polygon
-    pub fn with_polygon(
-        p: Point,
-        left: Segment,
-        right: Segment,
-        polygon: Box<MonotonePolygon>,
-    ) -> Self {
-        let mut polygons_list = Vec::new();
-        polygons_list.push(polygon);
+    pub fn with_polygon(p: Point, left: Segment, right: Segment, polygon: MonotonePolygon) -> Self {
+        let polygons_list = vec![polygon];
 
         Self {
             last_seen: p,
@@ -253,7 +248,7 @@ impl MonotonePolygonBuilder {
         for polygon in &interval.borrow().polygons_list {
             let mut polygon = polygon.clone();
             polygon.bottom = Some(p);
-            self.monotone_polygons.push(*polygon);
+            self.monotone_polygons.push(polygon);
         }
 
         self.segment_to_line.remove(&edge_left);
@@ -317,13 +312,10 @@ impl MonotonePolygonBuilder {
             }
 
             // Move polygons from right interval to left interval
-            left_interval_ref.borrow_mut().polygons_list.extend(
-                right_interval_ref
-                    .borrow_mut()
-                    .polygons_list
-                    .drain(..)
-                    .map(|polygon| polygon),
-            );
+            left_interval_ref
+                .borrow_mut()
+                .polygons_list
+                .append(&mut right_interval_ref.borrow_mut().polygons_list);
         } else {
             // This is the end point
             self.process_end_point(p, edge_left, edge_right, left_interval_ref);
@@ -349,7 +341,7 @@ impl MonotonePolygonBuilder {
                 for poly in interval_ref.borrow_mut().polygons_list.iter_mut().skip(1) {
                     let mut polygon = poly.clone();
                     polygon.bottom = Some(p);
-                    self.monotone_polygons.push(*polygon);
+                    self.monotone_polygons.push(polygon);
                 }
             } else {
                 // We are on left side of the interval
@@ -360,7 +352,7 @@ impl MonotonePolygonBuilder {
                     for poly in all_but_last {
                         let mut polygon = poly.clone();
                         polygon.bottom = Some(p);
-                        self.monotone_polygons.push(*polygon);
+                        self.monotone_polygons.push(polygon);
                     }
                     interval_ref.borrow_mut().polygons_list[0] = last.to_owned();
                 }
@@ -373,10 +365,8 @@ impl MonotonePolygonBuilder {
             if let Some(polygon) = interval_ref.borrow_mut().polygons_list.first_mut() {
                 polygon.right.push(p);
             }
-        } else {
-            if let Some(polygon) = interval_ref.borrow_mut().polygons_list.first_mut() {
-                polygon.left.push(p);
-            }
+        } else if let Some(polygon) = interval_ref.borrow_mut().polygons_list.first_mut() {
+            polygon.left.push(p);
         }
 
         self.segment_to_line
@@ -415,9 +405,7 @@ impl MonotonePolygonBuilder {
 
     fn process_start_point(&mut self, p: Point, edge_left: Segment, edge_right: Segment) {
         let mut mut_interval = Interval::new(p, edge_left.clone(), edge_right.clone());
-        mut_interval
-            .polygons_list
-            .push(Box::new(MonotonePolygon::new_top(p)));
+        mut_interval.polygons_list.push(MonotonePolygon::new_top(p));
 
         let line_interval = Rc::new(RefCell::new(mut_interval));
         self.segment_to_line
@@ -448,12 +436,12 @@ impl MonotonePolygonBuilder {
         if let Some(interval) = self.find_interval_with_point(p) {
             let right_segment = interval.borrow().right_segment.clone();
             interval.borrow_mut().right_segment = edge_left.clone();
-            interval.borrow_mut().last_seen = p.clone();
+            interval.borrow_mut().last_seen = p;
             self.segment_to_line
                 .insert(edge_left.clone(), interval.clone());
 
             let new_interval = Rc::new(RefCell::new(Interval::new(
-                p.clone(),
+                p,
                 edge_right.clone(),
                 right_segment.clone(),
             )));
@@ -464,32 +452,25 @@ impl MonotonePolygonBuilder {
 
             if interval.borrow().polygons_list.len() == 1 {
                 let mut new_polygon = if interval.borrow().polygons_list[0].right.is_empty() {
-                    MonotonePolygon::new_top(interval.borrow().polygons_list[0].top.clone())
+                    MonotonePolygon::new_top(interval.borrow().polygons_list[0].top)
                 } else {
                     MonotonePolygon::new_top(
-                        interval.borrow().polygons_list[0]
-                            .right
-                            .last()
-                            .unwrap()
-                            .clone(),
+                        *interval.borrow().polygons_list[0].right.last().unwrap(),
                     )
                 };
-                new_polygon.left.push(p.clone());
-                new_interval
-                    .borrow_mut()
-                    .polygons_list
-                    .push(Box::new(new_polygon));
-                interval.borrow_mut().polygons_list[0].right.push(p.clone());
+                new_polygon.left.push(p);
+                new_interval.borrow_mut().polygons_list.push(new_polygon);
+                interval.borrow_mut().polygons_list[0].right.push(p);
             }
             if interval.borrow().polygons_list.len() >= 2 {
-                interval.borrow_mut().polygons_list[0].right.push(p.clone());
+                interval.borrow_mut().polygons_list[0].right.push(p);
                 interval
                     .borrow_mut()
                     .polygons_list
                     .last_mut()
                     .unwrap()
                     .left
-                    .push(p.clone());
+                    .push(p);
                 for polygon in interval
                     .borrow()
                     .polygons_list
@@ -497,8 +478,8 @@ impl MonotonePolygonBuilder {
                     .skip(1)
                     .take(interval.borrow().polygons_list.len() - 2)
                 {
-                    let mut poly = *polygon.clone();
-                    poly.bottom = Some(p.clone());
+                    let mut poly = polygon.clone();
+                    poly.bottom = Some(p);
                     self.monotone_polygons.push(poly);
                 }
                 if let Some(last_polygon) = interval.borrow_mut().polygons_list.pop() {
