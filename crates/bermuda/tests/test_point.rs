@@ -29,19 +29,19 @@ fn test_vector_add(
 }
 
 #[rstest]
-#[case::colinear_1(
+#[case::collinear_1(
     Point::new(0.0, 0.0),
     Point::new(0.0, 1.0),
     Point::new(0.0, 2.0),
     Orientation::Collinear
 )]
-#[case::colinear_2(
+#[case::collinear_2(
     Point::new(0.0, 0.0),
     Point::new(0.0, 2.0),
     Point::new(0.0, 1.0),
     Orientation::Collinear
 )]
-#[case::colinear_3(
+#[case::collinear_3(
     Point::new(0.0, 2.0),
     Point::new(0.0, 0.0),
     Point::new(0.0, 1.0),
@@ -60,7 +60,7 @@ fn test_vector_add(
     Point::new(1.0, 1.0),
     Orientation::CounterClockwise
 )] // Right angle
-#[case::colinear_4(Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(1.0, -1.0), Orientation::Collinear)] // Same x, not collinear
+#[case::collinear_4(Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(1.0, -1.0), Orientation::Collinear)] // Same x, not collinear
 #[case::counter_clockwise_precision(Point::new(0.0, 0.0), Point::new(0.0001, 0.0001), Point::new(-0.0001, 0.0001), Orientation::CounterClockwise)] // Precision case1
 fn test_orientation(
     #[case] p: Point,
