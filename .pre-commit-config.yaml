@@ -16,7 +16,7 @@ repos:
 
   - repo: https://github.com/codespell-project/codespell
     # Configuration for codespell is in pyproject.toml
-    rev: v2.4.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies:
@@ -38,7 +38,7 @@ repos:
         pass_filenames: false # This makes it a lot faster
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.4
+    rev: v0.9.7
     hooks:
       - id: ruff-format
       - id: ruff
