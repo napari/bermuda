@@ -59,13 +59,10 @@ fn test_do_intersect_ne(#[case] s1: Segment, #[case] s2: Segment) {
 
 #[rstest]
 fn test_do_intersect_parallel_segments() {
-    assert_ne!(
-        intersection::do_intersect(
-            &Segment::new(Point::new_i(0, -1), Point::new_i(0, 1)),
-            &Segment::new(Point::new_i(1, -2), Point::new_i(1, 1))
-        ),
-        true
-    )
+    assert!(!intersection::do_intersect(
+        &Segment::new(Point::new_i(0, -1), Point::new_i(0, 1)),
+        &Segment::new(Point::new_i(1, -2), Point::new_i(1, 1))
+    ))
 }
 
 #[rstest]
@@ -93,20 +90,14 @@ fn test_find_intersection_collinear_segments() {
             &Segment::new_i((0, 0), (2, 0)),
             &Segment::new_i((1, 0), (3, 0))
         ),
-        intersection::Intersection::CollinearWithOverlap(vec![
-            Point::new_i(1, 0),
-            Point::new_i(2, 0)
-        ])
+        intersection::Intersection::CollinearWithOverlap((Point::new_i(1, 0), Point::new_i(2, 0)))
     );
     assert_eq!(
         intersection::find_intersection(
             &Segment::new_i((0, 0), (2, 0)),
             &Segment::new_i((1, 0), (3, 0))
         ),
-        intersection::Intersection::CollinearWithOverlap(vec![
-            Point::new_i(1, 0),
-            Point::new_i(2, 0)
-        ])
+        intersection::Intersection::CollinearWithOverlap((Point::new_i(1, 0), Point::new_i(2, 0)))
     );
 }
 
@@ -214,4 +205,152 @@ fn test_find_intersections_param(
     #[case] expected: HashSet<intersection::OrderedPair>,
 ) {
     assert_eq!(intersection::find_intersections(&segments), expected);
+}
+
+#[rstest]
+fn test_find_intersection_points_cross() {
+    /*
+    (1, 0) --- (1, 1)
+        \     /
+         \   /
+          \ /
+           X
+          / \
+         /   \
+        /     \
+    (0, 0) --- (0, 1)
+    */
+    let polygon = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.0, 1.0),
+    ]];
+
+    let result = intersection::find_intersection_points(&polygon);
+    let expected = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(0.0, 1.0),
+    ]];
+
+    assert_eq!(result, expected);
+}
+
+#[rstest]
+fn test_find_intersection_points_cross_intersect_in_point() {
+    /*
+    (1, 0) --- (1, 1)
+        \     /
+         \   /
+          \ /
+           X
+          / \
+         /   \
+        /     \
+    (0, 0) --- (0, 1)
+    */
+    let polygon = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.0, 1.0),
+    ]];
+
+    let result = intersection::find_intersection_points(&polygon);
+    let expected = vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(1.0, 1.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.5, 0.5),
+        Point::new(0.0, 1.0),
+    ]];
+
+    assert_eq!(result, expected);
+}
+
+#[rstest]
+fn test_find_intersection_points_overleap_edge() {
+    let polygon_list = vec![
+        vec![
+            Point::new(0.0, 0.0),
+            Point::new(3.0, 0.0),
+            Point::new(3.0, 3.0),
+            Point::new(0.0, 3.0),
+        ],
+        vec![
+            Point::new(1.0, 0.0),
+            Point::new(2.0, 0.0),
+            Point::new(2.0, 1.0),
+            Point::new(1.0, 1.0),
+        ],
+    ];
+    let result = intersection::find_intersection_points(&polygon_list);
+    assert_eq!(result.len(), 2);
+    assert_eq!(
+        result[0],
+        vec![
+            Point::new(0.0, 0.0),
+            Point::new(1.0, 0.0),
+            Point::new(2.0, 0.0),
+            Point::new(3.0, 0.0),
+            Point::new(3.0, 3.0),
+            Point::new(0.0, 3.0)
+        ]
+    );
+    assert_eq!(result[1], polygon_list[1]);
+}
+
+#[rstest]
+#[case::rectangle(vec![vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)]], 1, 4)]
+#[case::rectangle_in_rectangle(
+    vec![vec![
+        Point::new(0.0, 0.0),
+        Point::new(3.0, 0.0),
+        Point::new(3.0, 3.0),
+        Point::new(0.0, 3.0),
+        Point::new(0.0, 0.0),
+        Point::new(1.0, 1.0),
+        Point::new(2.0, 1.0),
+        Point::new(2.0, 2.0),
+        Point::new(1.0, 2.0),
+        Point::new(1.0, 1.0),
+    ]],
+    2,
+    8
+)]
+fn test_split_polygon_on_repeated_edges(
+    #[case] polygon_list: Vec<Vec<Point>>,
+    #[case] polygon_count: usize,
+    #[case] edge_count: usize,
+) {
+    let (polygons, edges) = intersection::split_polygons_on_repeated_edges(&polygon_list);
+    assert_eq!(polygons.len(), polygon_count);
+    assert_eq!(edges.len(), edge_count);
+}
+
+#[rstest]
+fn test_split_polygon_on_repeated_edges_merge_two_polygons() {
+    let polygon_list = vec![
+        vec![
+            Point::new(0.0, 0.0),
+            Point::new(3.0, 0.0),
+            Point::new(3.0, 3.0),
+            Point::new(0.0, 3.0),
+        ],
+        vec![
+            Point::new(1.0, 0.0),
+            Point::new(2.0, 0.0),
+            Point::new(2.0, 1.0),
+            Point::new(1.0, 1.0),
+        ],
+    ];
+    let (polygons, edges) = intersection::split_polygons_on_repeated_edges(&polygon_list);
+    assert_eq!(polygons.len(), 1);
+    assert_eq!(edges.len(), 8);
 }
