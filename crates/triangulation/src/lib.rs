@@ -2,6 +2,7 @@
 //!
 //! These algorithms are designed for performance when working with polygons.
 
+mod face_triangulation;
 pub mod intersection;
 pub mod monotone_polygon;
 pub mod path_triangulation;
