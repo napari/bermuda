@@ -111,9 +111,7 @@ jobs:
   upload_pypi:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/PartSegCore-compiled-backend
+    environment: pypi
     permissions:
       id-token: write # IMPORTANT: mandatory for trusted publishing
     # upload to PyPI on every tag starting with 'v'
