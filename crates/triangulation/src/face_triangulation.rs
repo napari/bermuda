@@ -40,13 +40,13 @@ impl PartialEq for PointEdgeInfo {
 impl Eq for PointEdgeInfo {}
 
 impl PartialOrd for PointEdgeInfo {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for PointEdgeInfo {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.opposite_point.cmp(&other.opposite_point)
     }
 }
@@ -184,6 +184,22 @@ pub struct MonotonePolygonBuilder {
     monotone_polygons: Vec<MonotonePolygon>,
 }
 
+fn get_left_right_edges_top(s1: &Segment, s2: &Segment) -> (Segment, Segment) {
+    if orientation(s1.bottom, s1.top, s2.bottom) == Orientation::CounterClockwise {
+        (s2.clone(), s1.clone())
+    } else {
+        (s1.clone(), s2.clone())
+    }
+}
+
+fn get_left_right_edges_bottom(s1: &Segment, s2: &Segment) -> (Segment, Segment) {
+    if orientation(s1.top, s1.bottom, s2.top) == Orientation::Clockwise {
+        (s2.clone(), s1.clone())
+    } else {
+        (s1.clone(), s2.clone())
+    }
+}
+
 impl MonotonePolygonBuilder {
     pub fn new() -> Self {
         Self {
@@ -255,9 +271,7 @@ impl MonotonePolygonBuilder {
         self.segment_to_line.remove(&edge_right);
     }
 
-    fn process_merge_point(&mut self, p: Point) {
-        let (edge_left, edge_right) = self.get_left_right_edges_bottom(&p);
-
+    fn process_merge_point(&mut self, p: Point, edge_left: Segment, edge_right: Segment) {
         let left_interval_ref = self
             .segment_to_line
             .get_mut(&edge_left)
@@ -322,7 +336,7 @@ impl MonotonePolygonBuilder {
         }
     }
 
-    fn _process_normal_point(
+    fn process_normal_point(
         &mut self,
         p: Point,
         edge_top: Segment,
@@ -396,13 +410,6 @@ impl MonotonePolygonBuilder {
         Ok(())
     }
 
-    pub fn process_normal_point(&mut self, p: Point) -> Result<(), String> {
-        let edge_top = self.edges[self.point_to_edges[&p][0].edge_index].clone();
-        let edge_bottom = self.edges[self.point_to_edges[&p][1].edge_index].clone();
-
-        self._process_normal_point(p, edge_top, edge_bottom)
-    }
-
     fn process_start_point(&mut self, p: Point, edge_left: Segment, edge_right: Segment) {
         let mut mut_interval = Interval::new(p, edge_left.clone(), edge_right.clone());
         mut_interval.polygons_list.push(MonotonePolygon::new_top(p));
@@ -430,9 +437,7 @@ impl MonotonePolygonBuilder {
         None
     }
 
-    fn process_split_point(&mut self, p: Point) {
-        let (edge_left, edge_right) = self.get_left_right_edges_top(&p);
-
+    fn process_split_point(&mut self, p: Point, edge_left: Segment, edge_right: Segment) {
         if let Some(interval) = self.find_interval_with_point(p) {
             let right_segment = interval.borrow().right_segment.clone();
             interval.borrow_mut().right_segment = edge_left.clone();
@@ -492,15 +497,13 @@ impl MonotonePolygonBuilder {
         }
     }
 
-    fn process_intersection_point(&mut self, p: Point) -> Result<(), String> {
-        let point_info = self.point_to_edges.get(&p).unwrap().clone();
+    fn process_intersection_point(&mut self, p: Point, edges: Vec<Segment>) -> Result<(), String> {
         let mut processed_segments = BTreeSet::new();
         let mut segments_to_normal_process = Vec::new();
         let mut top_segments = Vec::new();
         let mut bottom_segments = Vec::new();
 
-        for edge_info in point_info {
-            let edge = &self.edges[edge_info.edge_index].clone();
+        for edge in edges.iter() {
             if processed_segments.contains(edge) {
                 continue;
             }
@@ -540,7 +543,7 @@ impl MonotonePolygonBuilder {
             if *first_top == self.segment_to_line[first_top].borrow().right_segment {
                 top_begin.next();
                 let first_bottom = bottom_begin.next().unwrap();
-                self._process_normal_point(p, first_top.clone(), first_bottom.clone())?;
+                self.process_normal_point(p, first_top.clone(), first_bottom.clone())?;
             }
             let top_segments_last = top_segments.last().unwrap();
             if top_begin.count() > 0
@@ -550,7 +553,7 @@ impl MonotonePolygonBuilder {
                         .left_segment
             {
                 let last_bottom = bottom_begin.next_back().unwrap();
-                self._process_normal_point(p, top_segments_last.clone(), last_bottom.clone())?;
+                self.process_normal_point(p, top_segments_last.clone(), last_bottom.clone())?;
             }
         }
         while bottom_begin.peek().is_some() {
@@ -563,4 +566,77 @@ impl MonotonePolygonBuilder {
 
         Ok(())
     }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum PointType {
+    Intersection(Vec<Segment>),
+    Split(Segment, Segment),
+    Merge(Segment, Segment),
+    Normal(Segment, Segment),
+}
+
+pub fn get_point_type(p: Point, point_to_edges: &PointToEdges) -> PointType {
+    match point_to_edges.get(&p) {
+        None => panic!("Point not found in the map"),
+        Some(edges) => {
+            if edges.is_empty() {
+                panic!("Empty point found in the map");
+            }
+
+            // Convert edge info to segments
+            let segments: Vec<Segment> = edges
+                .iter()
+                .map(|edge_info| Segment::new(p, edge_info.opposite_point))
+                .collect();
+
+            if segments.len() != 2 {
+                return PointType::Intersection(segments);
+            }
+
+            let (seg1, seg2) = (segments[0].clone(), segments[1].clone());
+
+            // Both opposite points are less than p -> Split point
+            if edges[0].opposite_point < p && edges[1].opposite_point < p {
+                let (left, right) = get_left_right_edges_bottom(&seg1, &seg2);
+                return PointType::Split(left, right);
+            }
+            // Both opposite points are greater than p -> Merge point
+            if p < edges[0].opposite_point && p < edges[1].opposite_point {
+                let (left, right) = get_left_right_edges_top(&seg1, &seg2);
+                return PointType::Merge(left, right);
+            }
+            // Otherwise it's a normal point
+            PointType::Normal(seg1, seg2)
+        }
+    }
+}
+
+pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> Vec<MonotonePolygon> {
+    let mut builder = MonotonePolygonBuilder::new_with_edges(edges);
+    let mut points = builder
+        .point_to_edges
+        .keys()
+        .cloned()
+        .collect::<Vec<Point>>();
+    points.sort();
+    points.reverse();
+    for p in points {
+        let point_type = get_point_type(p, &builder.point_to_edges);
+        match point_type {
+            PointType::Intersection(li) => {
+                builder.process_intersection_point(p, li).unwrap();
+            }
+            PointType::Split(left, right) => {
+                builder.process_split_point(p, left, right);
+            }
+            PointType::Merge(left, right) => {
+                builder.process_merge_point(p, left, right);
+            }
+            PointType::Normal(top, bottom) => {
+                builder.process_normal_point(p, top, bottom).unwrap();
+            }
+        }
+    }
+    builder.monotone_polygons
 }
