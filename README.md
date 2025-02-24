@@ -6,10 +6,11 @@ Rust backend for napari contains code to speed up triangulation.
 
 ## Usage
 
-Currently, this package export only one function `triangulate_path_edge` which 
-takes a list of points and returns a list of triangles.
+Currently, this package exports only one function, `triangulate_path_edge`, which 
+takes a list of points representing a path and returns a list of triangles
+to draw the path with a given width.
 
-code works only with float32 points.
+Currently, only float32 points are supported.
 
 ```python
 from typing import Literal
