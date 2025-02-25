@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-use crate::monotone_polygon::MonotonePolygon;
-use crate::point::{orientation, Index, Orientation, Point, Segment};
+use crate::monotone_polygon::{triangulate_monotone_polygon, MonotonePolygon};
+use crate::point::{orientation, Index, Orientation, Point, Segment, Triangle};
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap};
@@ -8,7 +8,7 @@ use std::fmt;
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Interval {
+struct Interval {
     last_seen: Point,
     left_segment: Segment,
     right_segment: Segment,
@@ -16,7 +16,7 @@ pub struct Interval {
 }
 
 #[derive(Debug, Clone)]
-pub struct PointEdgeInfo {
+struct PointEdgeInfo {
     pub edge_index: Index,
     pub opposite_point: Point,
 }
@@ -51,7 +51,7 @@ impl Ord for PointEdgeInfo {
     }
 }
 
-pub type PointToEdges = HashMap<Point, Vec<PointEdgeInfo>>;
+type PointToEdges = HashMap<Point, Vec<PointEdgeInfo>>;
 
 fn get_points_edges(edges: &[Segment]) -> PointToEdges {
     let mut point_to_edges = PointToEdges::new();
@@ -108,7 +108,7 @@ impl Interval {
     // Default constructor not needed in Rust as we're not using it
 
     // Constructor with segments only
-    pub fn new(p: Point, left: Segment, right: Segment) -> Self {
+    fn new(p: Point, left: Segment, right: Segment) -> Self {
         Self {
             last_seen: p,
             left_segment: left,
@@ -118,7 +118,7 @@ impl Interval {
     }
 
     // Constructor with segments and polygon
-    pub fn with_polygon(p: Point, left: Segment, right: Segment, polygon: MonotonePolygon) -> Self {
+    fn with_polygon(p: Point, left: Segment, right: Segment, polygon: MonotonePolygon) -> Self {
         let polygons_list = vec![polygon];
 
         Self {
@@ -129,7 +129,7 @@ impl Interval {
         }
     }
 
-    pub fn replace_segment(&mut self, old_segment: &Segment, new_segment: Segment) {
+    fn replace_segment(&mut self, old_segment: &Segment, new_segment: Segment) {
         if self.left_segment == *old_segment {
             self.left_segment = new_segment;
             return;
@@ -140,7 +140,7 @@ impl Interval {
         panic!("Segment not found in interval");
     }
 
-    pub fn opposite_segment(&self, segment: &Segment) -> Segment {
+    fn opposite_segment(&self, segment: &Segment) -> Segment {
         if *segment == self.left_segment {
             self.right_segment.clone()
         } else if *segment == self.right_segment {
@@ -177,13 +177,6 @@ impl fmt::Debug for Interval {
     }
 }
 
-pub struct MonotonePolygonBuilder {
-    segment_to_line: HashMap<Segment, Rc<RefCell<Interval>>>,
-    edges: Vec<Segment>,
-    point_to_edges: HashMap<Point, Vec<PointEdgeInfo>>,
-    monotone_polygons: Vec<MonotonePolygon>,
-}
-
 fn get_left_right_edges_top(s1: &Segment, s2: &Segment) -> (Segment, Segment) {
     if orientation(s1.bottom, s1.top, s2.bottom) == Orientation::CounterClockwise {
         (s2.clone(), s1.clone())
@@ -198,6 +191,13 @@ fn get_left_right_edges_bottom(s1: &Segment, s2: &Segment) -> (Segment, Segment)
     } else {
         (s1.clone(), s2.clone())
     }
+}
+
+struct MonotonePolygonBuilder {
+    segment_to_line: HashMap<Segment, Rc<RefCell<Interval>>>,
+    edges: Vec<Segment>,
+    point_to_edges: HashMap<Point, Vec<PointEdgeInfo>>,
+    monotone_polygons: Vec<MonotonePolygon>,
 }
 
 impl MonotonePolygonBuilder {
@@ -576,7 +576,7 @@ pub enum PointType {
     Normal(Segment, Segment),
 }
 
-pub fn get_point_type(p: Point, point_to_edges: &PointToEdges) -> PointType {
+fn get_point_type(p: Point, point_to_edges: &PointToEdges) -> PointType {
     match point_to_edges.get(&p) {
         None => panic!("Point not found in the map"),
         Some(edges) => {
@@ -612,7 +612,30 @@ pub fn get_point_type(p: Point, point_to_edges: &PointToEdges) -> PointType {
     }
 }
 
-pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> Vec<MonotonePolygon> {
+fn triangulate_monotone_polygons(
+    monotone_polygons: &[MonotonePolygon],
+    points: &[Point],
+) -> Vec<Triangle> {
+    let mut triangles = vec![];
+    let point_to_index = points
+        .iter()
+        .enumerate()
+        .map(|(i, p)| (*p, i))
+        .collect::<HashMap<Point, Index>>();
+    for monotone_polygon in monotone_polygons {
+        let point_triangles = triangulate_monotone_polygon(monotone_polygon);
+        for triangle in point_triangles {
+            triangles.push(Triangle::new(
+                point_to_index[&triangle.p1],
+                point_to_index[&triangle.p2],
+                point_to_index[&triangle.p3],
+            ));
+        }
+    }
+    triangles
+}
+
+pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> (Vec<Triangle>, Vec<Point>) {
     let mut builder = MonotonePolygonBuilder::new_with_edges(edges);
     let mut points = builder
         .point_to_edges
@@ -621,22 +644,108 @@ pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> Vec<MonotonePolygon> 
         .collect::<Vec<Point>>();
     points.sort();
     points.reverse();
-    for p in points {
-        let point_type = get_point_type(p, &builder.point_to_edges);
+    for p in &points {
+        let point_type = get_point_type(*p, &builder.point_to_edges);
         match point_type {
             PointType::Intersection(li) => {
-                builder.process_intersection_point(p, li).unwrap();
+                builder.process_intersection_point(*p, li).unwrap();
             }
             PointType::Split(left, right) => {
-                builder.process_split_point(p, left, right);
+                builder.process_split_point(*p, left, right);
             }
             PointType::Merge(left, right) => {
-                builder.process_merge_point(p, left, right);
+                builder.process_merge_point(*p, left, right);
             }
             PointType::Normal(top, bottom) => {
-                builder.process_normal_point(p, top, bottom).unwrap();
+                builder.process_normal_point(*p, top, bottom).unwrap();
             }
         }
     }
-    builder.monotone_polygons
+    (
+        triangulate_monotone_polygons(&builder.monotone_polygons, &points),
+        points,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::point::calc_dedup_edges;
+    use rstest::rstest;
+
+    const DIAMOND: [Point; 4] = [
+        Point::new(1.0, 0.0),
+        Point::new(2.0, 1.0),
+        Point::new(1.0, 2.0),
+        Point::new(0.0, 1.0),
+    ];
+
+    #[rstest]
+    fn test_get_points_edges_diamond() {
+        let edges = calc_dedup_edges(&vec![DIAMOND.to_vec()]);
+        let point_to_edges = get_points_edges(&edges);
+        assert_eq!(point_to_edges.len(), 4);
+        assert_eq!(
+            point_to_edges[&Point::new(1.0, 0.0)],
+            vec![
+                PointEdgeInfo::new(0, Point::new(2.0, 1.0)),
+                PointEdgeInfo::new(3, Point::new(0.0, 1.0))
+            ]
+        );
+        assert_eq!(
+            point_to_edges[&Point::new(2.0, 1.0)],
+            vec![
+                PointEdgeInfo::new(2, Point::new(1.0, 2.0)),
+                PointEdgeInfo::new(1, Point::new(1.0, 0.0))
+            ]
+        );
+        assert_eq!(
+            point_to_edges[&Point::new(1.0, 2.0)],
+            vec![
+                PointEdgeInfo::new(2, Point::new(2.0, 1.0)),
+                PointEdgeInfo::new(3, Point::new(0.0, 1.0))
+            ]
+        );
+        assert_eq!(
+            point_to_edges[&Point::new(0.0, 1.0)],
+            vec![
+                PointEdgeInfo::new(0, Point::new(1.0, 2.0)),
+                PointEdgeInfo::new(3, Point::new(1.0, 0.0))
+            ]
+        );
+    }
+
+    #[rstest]
+    fn test_get_point_type() {
+        let edges = calc_dedup_edges(&vec![DIAMOND.to_vec()]);
+        let point_to_edges = get_points_edges(&edges);
+        assert_eq!(
+            get_point_type(Point::new(1.0, 2.0), &point_to_edges),
+            PointType::Split(
+                Segment::new(Point::new(1.0, 2.0), Point::new(2.0, 1.0)),
+                Segment::new(Point::new(1.0, 2.0), Point::new(0.0, 1.0))
+            )
+        );
+        assert_eq!(
+            get_point_type(Point::new(1.0, 0.0), &point_to_edges),
+            PointType::Merge(
+                Segment::new(Point::new(1.0, 0.0), Point::new(2.0, 1.0)),
+                Segment::new(Point::new(1.0, 0.0), Point::new(0.0, 1.0))
+            )
+        );
+        assert_eq!(
+            get_point_type(Point::new(2.0, 1.0), &point_to_edges),
+            PointType::Normal(
+                Segment::new(Point::new(2.0, 1.0), Point::new(1.0, 2.0)),
+                Segment::new(Point::new(2.0, 1.0), Point::new(1.0, 0.0))
+            )
+        );
+        assert_eq!(
+            get_point_type(Point::new(0.0, 1.0), &point_to_edges),
+            PointType::Normal(
+                Segment::new(Point::new(0.0, 1.0), Point::new(1.0, 2.0)),
+                Segment::new(Point::new(0.0, 1.0), Point::new(1.0, 0.0))
+            )
+        );
+    }
 }

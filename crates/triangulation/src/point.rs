@@ -12,7 +12,7 @@ pub struct Point {
 }
 
 impl Point {
-    pub fn new(x: Coord, y: Coord) -> Self {
+    pub const fn new(x: Coord, y: Coord) -> Self {
         Self { x, y }
     }
     pub fn new_i(x: i32, y: i32) -> Self {
