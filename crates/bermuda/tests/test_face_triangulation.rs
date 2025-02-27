@@ -45,10 +45,10 @@ fn renumerate_triangles(
 }
 
 #[rstest]
-// #[case::square_with_diagonal(
-//     vec![Point::new(0.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 2.0), Point::new(2.0, 1.0)],
-//     vec![[3, 2, 1], [0, 3, 1]]
-// )]
+#[case::square_with_diagonal(
+    vec![Point::new(0.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 2.0), Point::new(2.0, 1.0)],
+    vec![[3, 2, 1], [0, 3, 1]]
+)]
 #[case::complex_hexagon(
     vec![
         Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(1.0, 2.0),
@@ -56,27 +56,27 @@ fn renumerate_triangles(
     ],
     vec![[4, 3, 5], [3, 2, 1], [5, 3, 1], [5, 1, 0]]
 )]
-// #[case::irregular_hexagon(
-//     vec![
-//         Point::new(0.0, 1.0), Point::new(0.0, 2.0), Point::new(1.0, 1.5),
-//         Point::new(2.0, 2.0), Point::new(2.0, 1.0), Point::new(1.0, 0.5)
-//     ],
-//     vec![[4, 3, 2], [2, 1, 0], [4, 2, 0], [5, 4, 0]]
-// )]
-// #[case::irregular_hexagon_2(
-//     vec![
-//         Point::new(0.0, 1.0), Point::new(0.0, 2.0), Point::new(1.0, 0.5),
-//         Point::new(2.0, 2.0), Point::new(2.0, 1.0), Point::new(1.0, -0.5)
-//     ],
-//     vec![[2, 1, 0], [2, 0, 5], [4, 3, 2], [5, 4, 2]]
-// )]
-// #[case::triangle_with_interior(
-//     vec![
-//         Point::new(0.0, 0.0), Point::new(1.0, 2.0), Point::new(2.0, 0.0),
-//         Point::new(1.0, 1.0)
-//     ],
-//     vec![[2, 1, 3], [3, 1, 0]]
-// )]
+#[case::irregular_hexagon(
+    vec![
+        Point::new(0.0, 1.0), Point::new(0.0, 2.0), Point::new(1.0, 1.5),
+        Point::new(2.0, 2.0), Point::new(2.0, 1.0), Point::new(1.0, 0.5)
+    ],
+    vec![[4, 3, 2], [2, 1, 0], [4, 2, 0], [5, 4, 0]]
+)]
+#[case::irregular_hexagon_2(
+    vec![
+        Point::new(0.0, 1.0), Point::new(0.0, 2.0), Point::new(1.0, 0.5),
+        Point::new(2.0, 2.0), Point::new(2.0, 1.0), Point::new(1.0, -0.5)
+    ],
+    vec![[2, 1, 0], [2, 0, 5], [4, 3, 2], [5, 4, 2]]
+)]
+#[case::triangle_with_interior(
+    vec![
+        Point::new(0.0, 0.0), Point::new(1.0, 2.0), Point::new(2.0, 0.0),
+        Point::new(1.0, 1.0)
+    ],
+    vec![[2, 1, 3], [3, 1, 0]]
+)]
 // #[case::pentagon_1(
 //     vec![
 //         Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(0.5, 0.5),

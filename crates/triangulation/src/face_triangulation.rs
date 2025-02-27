@@ -427,10 +427,10 @@ impl MonotonePolygonBuilder {
                 // skip this pointed by right segment to avoid duplication
                 continue;
             }
-            if !(interval.borrow().left_segment.point_on_line_x(p.y) < p.x
-                && interval.borrow().right_segment.point_on_line_x(p.y) > p.x)
+            if interval.borrow().left_segment.point_on_line_x(p.y) < p.x
+                && interval.borrow().right_segment.point_on_line_x(p.y) > p.x
             {
-                // we are outside the interval so this interval do not contain the split point
+                // we are inside the interval
                 return Some(interval.clone());
             }
         }
