@@ -598,12 +598,12 @@ fn get_point_type(p: Point, point_to_edges: &PointToEdges) -> PointType {
 
             // Both opposite points are less than p -> Split point
             if edges[0].opposite_point < p && edges[1].opposite_point < p {
-                let (left, right) = get_left_right_edges_bottom(&seg1, &seg2);
+                let (left, right) = get_left_right_edges_top(&seg1, &seg2);
                 return PointType::Split(left, right);
             }
             // Both opposite points are greater than p -> Merge point
             if p < edges[0].opposite_point && p < edges[1].opposite_point {
-                let (left, right) = get_left_right_edges_top(&seg1, &seg2);
+                let (left, right) = get_left_right_edges_bottom(&seg1, &seg2);
                 return PointType::Merge(left, right);
             }
             // Otherwise it's a normal point

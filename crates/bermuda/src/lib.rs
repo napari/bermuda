@@ -1,9 +1,18 @@
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
-use triangulation::{triangulate_path_edge as triangulate_path_edge_rust, Point};
+use triangulation::point::Triangle;
+use triangulation::{
+    split_polygons_on_repeated_edges, sweeping_line_triangulation,
+    triangulate_path_edge as triangulate_path_edge_rust, triangulate_paths_edge, PathTriangulation,
+    Point,
+};
 
-type EdgeTriangulation = PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>)>;
+type EdgeTriangulation = (Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>);
+type FaceTriangulation = (Py<PyArray2<u32>>, Py<PyArray2<f32>>);
+type PyEdgeTriangulation = PyResult<EdgeTriangulation>;
+type PyFaceTriangulation = PyResult<FaceTriangulation>;
+type PyPolygonTriangulation = PyResult<(FaceTriangulation, EdgeTriangulation)>;
 
 /// Determines the triangulation of a path in 2D
 ///
@@ -39,7 +48,7 @@ fn triangulate_path_edge(
     closed: Option<bool>,
     limit: Option<f32>,
     bevel: Option<bool>,
-) -> EdgeTriangulation {
+) -> PyEdgeTriangulation {
     // Convert the numpy array into a rust compatible representations which is a vector of points.
     let path_: Vec<Point> = path
         .as_array()
@@ -58,35 +67,97 @@ fn triangulate_path_edge(
         limit.unwrap_or(3.0),
         bevel.unwrap_or(false),
     );
-    let triangle_data: Vec<u32> = result
+    triangulation_to_edge_triangulate(py, &result)
+}
+
+fn triangulation_to_edge_triangulate(
+    py: Python<'_>,
+    data: &PathTriangulation,
+) -> PyEdgeTriangulation {
+    let triangle_data: Vec<u32> = data
         .triangles
         .iter()
         .flat_map(|t| [t.x as u32, t.y as u32, t.z as u32])
         .collect();
 
-    // Convert back to numpy array ((M-2)x3) if triangles is not empty, otherwise create empty array (0x3).
-    let triangle_array = if !result.triangles.is_empty() {
-        PyArray::from_vec(py, triangle_data).reshape([result.triangles.len(), 3])?
+    let triangle_array = if !data.triangles.is_empty() {
+        PyArray::from_vec(py, triangle_data).reshape([data.triangles.len(), 3])?
     } else {
         PyArray2::<u32>::zeros(py, [0, 3], false)
     };
 
-    let flat_centers: Vec<f32> = result.centers.iter().flat_map(|p| [p.x, p.y]).collect();
-    let flat_offsets: Vec<f32> = result.offsets.iter().flat_map(|v| [v.x, v.y]).collect();
+    let flat_centers: Vec<f32> = data.centers.iter().flat_map(|p| [p.x, p.y]).collect();
+    let flat_offsets: Vec<f32> = data.offsets.iter().flat_map(|v| [v.x, v.y]).collect();
 
     Ok((
         PyArray::from_vec(py, flat_centers)
-            .reshape([result.centers.len(), 2])?
+            .reshape([data.centers.len(), 2])?
             .into(),
         PyArray::from_vec(py, flat_offsets)
-            .reshape([result.offsets.len(), 2])?
+            .reshape([data.offsets.len(), 2])?
             .into(),
         triangle_array.into(),
+    ))
+}
+
+fn triangulation_to_face_triangulate(
+    py: Python<'_>,
+    triangles: &[Triangle],
+    points: &[Point],
+) -> PyFaceTriangulation {
+    let triangle_data: Vec<u32> = triangles
+        .iter()
+        .flat_map(|t| [t.x as u32, t.y as u32, t.z as u32])
+        .collect();
+
+    let triangle_array = if !triangles.is_empty() {
+        PyArray::from_vec(py, triangle_data).reshape([triangles.len(), 3])?
+    } else {
+        PyArray2::<u32>::zeros(py, [0, 3], false)
+    };
+    let flat_points: Vec<f32> = points.iter().flat_map(|p| [p.x, p.y]).collect();
+    Ok((
+        triangle_array.into(),
+        PyArray::from_vec(py, flat_points)
+            .reshape([points.len(), 2])?
+            .into(),
+    ))
+}
+
+#[pyfunction]
+#[pyo3(signature = (polygons))]
+fn triangulate_polygons_with_edge(
+    py: Python<'_>,
+    polygons: Vec<PyReadonlyArray2<'_, f32>>,
+) -> PyPolygonTriangulation {
+    // Convert the numpy array into a rust compatible representations which is a vector of points.
+    let polygons_: Vec<Vec<Point>> = polygons
+        .into_iter()
+        .map(|polygon| {
+            polygon
+                .as_array()
+                .rows()
+                .into_iter()
+                .map(|row| Point {
+                    x: row[0],
+                    y: row[1],
+                })
+                .collect()
+        })
+        .collect();
+
+    let (new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
+    let (face_triangles, face_points) = sweeping_line_triangulation(segments);
+    let path_triangulation = triangulate_paths_edge(&new_polygons, true, 3.0, false);
+    Ok((
+        triangulation_to_face_triangulate(py, &face_triangles, &face_points)?,
+        triangulation_to_edge_triangulate(py, &path_triangulation)?,
     ))
 }
 
 #[pymodule]
 fn _bermuda(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(triangulate_path_edge, m)?)?;
+    m.add_function(wrap_pyfunction!(triangulate_polygons_with_edge, m)?)?;
     Ok(())
 }

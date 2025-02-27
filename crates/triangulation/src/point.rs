@@ -305,6 +305,14 @@ impl Triangle {
     pub fn new(x: Index, y: Index, z: Index) -> Self {
         Triangle { x, y, z }
     }
+
+    pub fn shifted_by(&self, shift: Index) -> Self {
+        Triangle {
+            x: self.x + shift,
+            y: self.y + shift,
+            z: self.z + shift,
+        }
+    }
 }
 
 /// Represents a triangle using three points.

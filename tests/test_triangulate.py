@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from bermuda import triangulate_path_edge
+from bermuda import triangulate_path_edge, triangulate_polygons_with_edge
 
 
 @pytest.mark.parametrize(
@@ -197,3 +197,41 @@ def test_change_limit():
         limit=0.5,
     )
     assert len(triangles) == 12
+
+
+TEST_POLYGONS = [
+    (np.array(x, dtype=np.float32), y)
+    for x, y in [
+        ([(0, 0), (1, 1), (0, 2), (2, 1)], [(3, 2, 1), (0, 3, 1)]),
+        (
+            [(0, 0), (0, 1), (1, 2), (2, 1), (2, 0), (1, 0.5)],
+            [(4, 3, 5), (3, 2, 1), (5, 3, 1), (5, 1, 0)],
+        ),
+        (
+            [(0, 1), (0, 2), (1, 1.5), (2, 2), (2, 1), (1, 0.5)],
+            [(4, 3, 2), (2, 1, 0), (4, 2, 0), (5, 4, 0)],
+        ),
+        (
+            [(0, 1), (0, 2), (1, 0.5), (2, 2), (2, 1), (1, -0.5)],
+            [(2, 1, 0), (2, 0, 5), (4, 3, 2), (5, 4, 2)],
+        ),
+        ([(0, 0), (1, 2), (2, 0), (1, 1)], [(2, 1, 3), (3, 1, 0)]),
+        ([(0, 0), (0, 1), (0.5, 0.5), (1, 0), (1, 1)], [(3, 4, 2), (2, 1, 0)]),
+        ([(0, 0), (1, 0), (0.5, 0.5), (0, 1), (1, 1)], [(2, 4, 3), (1, 2, 0)]),
+    ]
+]
+
+
+def _renumerate_triangles(polygon, points, triangles):
+    point_num = {tuple(point): i for i, point in enumerate(polygon)}
+    return [
+        tuple(point_num[tuple(points[point])] for point in triangle)
+        for triangle in triangles
+    ]
+
+
+@pytest.mark.parametrize(('polygon', 'expected'), TEST_POLYGONS)
+def test_triangulate_polygon_py_non_convex(polygon, expected):
+    (triangles, points), _edges = triangulate_polygons_with_edge([polygon])
+    triangles_ = _renumerate_triangles(polygon, points, triangles)
+    assert triangles_ == expected
