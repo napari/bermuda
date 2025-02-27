@@ -25,6 +25,11 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+      - name: cargo version
+        run: |
+          cargo --version
+          cargo clippy --version
+
       - name: Run pre-commit
         run: uvx pre-commit run --all-files
 
