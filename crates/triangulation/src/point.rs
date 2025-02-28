@@ -5,6 +5,7 @@ use std::hash::{Hash, Hasher};
 
 pub(crate) type Coord = f32;
 pub(crate) type Index = usize;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
     pub x: Coord,

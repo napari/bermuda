@@ -6,6 +6,24 @@ use std::collections::{BTreeSet, HashMap};
 use std::fmt;
 use std::rc::Rc;
 
+/// Represents an interval in a sweeping line algorithm for polygon triangulation.
+///
+/// An interval is defined by two segments (left and right boundaries) and maintains
+/// information about monotone polygons being built during the sweep line process.
+///
+/// # Fields
+///
+/// * `last_seen` - The most recently processed point on the sweep line
+/// * `left_segment` - The leftmost segment that bounds this interval
+/// * `right_segment` - The rightmost segment that bounds this interval
+/// * `polygons_list` - Collection of monotone polygons being constructed within this interval
+///
+/// # Notes
+///
+/// This struct is part of the sweep line algorithm used in polygon triangulation.
+/// It keeps track of the state between the left and right segments as the sweep line
+/// moves through the polygon, helping to build monotone polygons during the process.
+
 #[derive(Clone)]
 struct Interval {
     last_seen: Point,
@@ -704,5 +722,39 @@ mod tests {
                 Segment::new(Point::new(0.0, 1.0), Point::new(1.0, 0.0))
             )
         );
+    }
+
+    #[rstest]
+    fn tets_sort_segments_comparator_share_bottom() {
+        let mut segments = vec![
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 1.0, y: 1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 0.0, y: 1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: -1.0, y: 1.0 }),
+        ];
+
+        let expected_segments = vec![
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: -1.0, y: 1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 0.0, y: 1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 1.0, y: 1.0 }),
+        ];
+        segments.sort_by(left_right_share_bottom);
+        assert_eq!(segments, expected_segments);
+        // bottom_segments.sort_by(left_right_share_top);
+    }
+    #[rstest]
+    fn tets_sort_segments_comparator_share_top() {
+        let mut segments = vec![
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 1.0, y: -1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 0.0, y: -1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: -1.0, y: -1.0 }),
+        ];
+
+        let expected_segments = vec![
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: -1.0, y: -1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 0.0, y: -1.0 }),
+            Segment::new(Point { x: 0.0, y: 0.0 }, Point { x: 1.0, y: -1.0 }),
+        ];
+        segments.sort_by(left_right_share_top);
+        assert_eq!(segments, expected_segments);
     }
 }
