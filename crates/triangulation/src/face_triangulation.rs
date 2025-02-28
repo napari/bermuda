@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::monotone_polygon::{triangulate_monotone_polygon, MonotonePolygon};
 use crate::point::{orientation, Index, Orientation, Point, Segment, Triangle};
 use std::cell::RefCell;
@@ -17,17 +16,7 @@ struct Interval {
 
 #[derive(Debug, Clone)]
 struct PointEdgeInfo {
-    pub edge_index: Index,
     pub opposite_point: Point,
-}
-
-impl PointEdgeInfo {
-    pub fn new(edge_index: Index, opposite_point: Point) -> Self {
-        Self {
-            edge_index,
-            opposite_point,
-        }
-    }
 }
 
 // Implement comparison traits
@@ -57,12 +46,11 @@ fn get_points_edges(edges: &[Segment]) -> PointToEdges {
     let mut point_to_edges = PointToEdges::new();
 
     // Populate the map with edges
-    for (i, edge) in edges.iter().enumerate() {
+    for edge in edges.iter() {
         point_to_edges
             .entry(edge.bottom)
             .or_default()
             .push(PointEdgeInfo {
-                edge_index: i,
                 opposite_point: edge.top,
             });
 
@@ -70,7 +58,6 @@ fn get_points_edges(edges: &[Segment]) -> PointToEdges {
             .entry(edge.top)
             .or_default()
             .push(PointEdgeInfo {
-                edge_index: i,
                 opposite_point: edge.bottom,
             });
     }
@@ -195,62 +182,17 @@ fn get_left_right_edges_bottom(s1: &Segment, s2: &Segment) -> (Segment, Segment)
 
 struct MonotonePolygonBuilder {
     segment_to_line: HashMap<Segment, Rc<RefCell<Interval>>>,
-    edges: Vec<Segment>,
     point_to_edges: HashMap<Point, Vec<PointEdgeInfo>>,
     monotone_polygons: Vec<MonotonePolygon>,
 }
 
 impl MonotonePolygonBuilder {
-    pub fn new() -> Self {
-        Self {
-            segment_to_line: HashMap::new(),
-            edges: Vec::new(),
-            point_to_edges: HashMap::new(),
-            monotone_polygons: Vec::new(),
-        }
-    }
-
-    pub fn new_with_edges(edges: Vec<Segment>) -> Self {
+    pub fn new(edges: Vec<Segment>) -> Self {
         let point_to_edges = get_points_edges(&edges);
         Self {
             segment_to_line: HashMap::new(),
-            edges,
             point_to_edges,
             monotone_polygons: Vec::new(),
-        }
-    }
-
-    fn get_left_right_edges_top(&self, p: &Point) -> (Segment, Segment) {
-        let point_info = self.point_to_edges.get(p).unwrap();
-        let fst_idx = point_info[0].edge_index;
-        let snd_idx = point_info[1].edge_index;
-
-        if orientation(
-            self.edges[fst_idx].bottom,
-            self.edges[fst_idx].top,
-            self.edges[snd_idx].bottom,
-        ) == Orientation::CounterClockwise
-        {
-            (self.edges[snd_idx].clone(), self.edges[fst_idx].clone())
-        } else {
-            (self.edges[fst_idx].clone(), self.edges[snd_idx].clone())
-        }
-    }
-
-    fn get_left_right_edges_bottom(&self, p: &Point) -> (Segment, Segment) {
-        let point_info = self.point_to_edges.get(p).unwrap();
-        let fst_idx = point_info[0].edge_index;
-        let snd_idx = point_info[1].edge_index;
-
-        if orientation(
-            self.edges[fst_idx].top,
-            self.edges[fst_idx].bottom,
-            self.edges[snd_idx].top,
-        ) == Orientation::Clockwise
-        {
-            (self.edges[snd_idx].clone(), self.edges[fst_idx].clone())
-        } else {
-            (self.edges[fst_idx].clone(), self.edges[snd_idx].clone())
         }
     }
 
@@ -414,8 +356,12 @@ impl MonotonePolygonBuilder {
     }
 
     fn process_start_point(&mut self, p: Point, edge_left: Segment, edge_right: Segment) {
-        let mut mut_interval = Interval::new(p, edge_left.clone(), edge_right.clone());
-        mut_interval.polygons_list.push(MonotonePolygon::new_top(p));
+        let mut_interval = Interval::with_polygon(
+            p,
+            edge_left.clone(),
+            edge_right.clone(),
+            MonotonePolygon::new_top(p),
+        );
 
         let line_interval = Rc::new(RefCell::new(mut_interval));
         self.segment_to_line
@@ -639,7 +585,7 @@ fn triangulate_monotone_polygons(
 }
 
 pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> (Vec<Triangle>, Vec<Point>) {
-    let mut builder = MonotonePolygonBuilder::new_with_edges(edges);
+    let mut builder = MonotonePolygonBuilder::new(edges);
     let mut points = builder
         .point_to_edges
         .keys()
@@ -691,29 +637,45 @@ mod tests {
         assert_eq!(
             point_to_edges[&Point::new(1.0, 0.0)],
             vec![
-                PointEdgeInfo::new(0, Point::new(2.0, 1.0)),
-                PointEdgeInfo::new(3, Point::new(0.0, 1.0))
+                PointEdgeInfo {
+                    opposite_point: Point::new(2.0, 1.0)
+                },
+                PointEdgeInfo {
+                    opposite_point: Point::new(0.0, 1.0)
+                }
             ]
         );
         assert_eq!(
             point_to_edges[&Point::new(2.0, 1.0)],
             vec![
-                PointEdgeInfo::new(2, Point::new(1.0, 2.0)),
-                PointEdgeInfo::new(1, Point::new(1.0, 0.0))
+                PointEdgeInfo {
+                    opposite_point: Point::new(1.0, 2.0)
+                },
+                PointEdgeInfo {
+                    opposite_point: Point::new(1.0, 0.0)
+                }
             ]
         );
         assert_eq!(
             point_to_edges[&Point::new(1.0, 2.0)],
             vec![
-                PointEdgeInfo::new(2, Point::new(2.0, 1.0)),
-                PointEdgeInfo::new(3, Point::new(0.0, 1.0))
+                PointEdgeInfo {
+                    opposite_point: Point::new(2.0, 1.0)
+                },
+                PointEdgeInfo {
+                    opposite_point: Point::new(0.0, 1.0)
+                }
             ]
         );
         assert_eq!(
             point_to_edges[&Point::new(0.0, 1.0)],
             vec![
-                PointEdgeInfo::new(0, Point::new(1.0, 2.0)),
-                PointEdgeInfo::new(3, Point::new(1.0, 0.0))
+                PointEdgeInfo {
+                    opposite_point: Point::new(1.0, 2.0)
+                },
+                PointEdgeInfo {
+                    opposite_point: Point::new(1.0, 0.0)
+                }
             ]
         );
     }
