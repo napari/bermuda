@@ -725,15 +725,15 @@ mod tests {
         assert_eq!(
             get_point_type(Point::new(1.0, 2.0), &point_to_edges),
             PointType::Split(
-                Segment::new(Point::new(1.0, 2.0), Point::new(2.0, 1.0)),
-                Segment::new(Point::new(1.0, 2.0), Point::new(0.0, 1.0))
+                Segment::new(Point::new(1.0, 2.0), Point::new(0.0, 1.0)),
+                Segment::new(Point::new(1.0, 2.0), Point::new(2.0, 1.0))
             )
         );
         assert_eq!(
             get_point_type(Point::new(1.0, 0.0), &point_to_edges),
             PointType::Merge(
+                Segment::new(Point::new(1.0, 0.0), Point::new(0.0, 1.0)),
                 Segment::new(Point::new(1.0, 0.0), Point::new(2.0, 1.0)),
-                Segment::new(Point::new(1.0, 0.0), Point::new(0.0, 1.0))
             )
         );
         assert_eq!(
