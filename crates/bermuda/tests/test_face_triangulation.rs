@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use triangulation::face_triangulation::sweeping_line_triangulation;
 use triangulation::point::{calc_dedup_edges, Point, Triangle};
+use triangulation::split_polygons_on_repeated_edges;
 
 const DIAMOND: [Point; 4] = [
     Point::new(1.0, 0.0),
@@ -12,17 +13,17 @@ const DIAMOND: [Point; 4] = [
     Point::new(0.0, 1.0),
 ];
 
-// #[rstest]
-// fn test_diamond() {
-//     let (triangles, points) =
-//         sweeping_line_triangulation(calc_dedup_edges(&vec![DIAMOND.to_vec()]));
-//     assert_eq!(triangles.len(), 2);
-//     assert_eq!(points.len(), 4);
-//     assert_eq!(
-//         points.into_iter().collect::<HashSet<_>>(),
-//         DIAMOND.iter().cloned().collect::<HashSet<_>>()
-//     );
-// }
+#[rstest]
+fn test_diamond() {
+    let (triangles, points) =
+        sweeping_line_triangulation(calc_dedup_edges(&vec![DIAMOND.to_vec()]));
+    assert_eq!(triangles.len(), 2);
+    assert_eq!(points.len(), 4);
+    assert_eq!(
+        points.into_iter().collect::<HashSet<_>>(),
+        DIAMOND.iter().cloned().collect::<HashSet<_>>()
+    );
+}
 
 fn renumerate_triangles(
     polygon: &[Point],
@@ -77,25 +78,30 @@ fn renumerate_triangles(
     ],
     vec![[2, 1, 3], [3, 1, 0]]
 )]
-// #[case::pentagon_1(
-//     vec![
-//         Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(0.5, 0.5),
-//         Point::new(1.0, 0.0), Point::new(1.0, 1.0)
-//     ],
-//     vec![[3, 4, 2], [2, 1, 0]]
-// )]
-// #[case::pentagon_2(
-//     vec![
-//         Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(0.5, 0.5),
-//         Point::new(0.0, 1.0), Point::new(1.0, 1.0)
-//     ],
-//     vec![[2, 4, 3], [1, 2, 0]]
-// )]
+#[case::pentagon_1(
+    vec![
+        Point::new(0.0, 0.0), Point::new(0.0, 1.0), Point::new(0.5, 0.5),
+        Point::new(1.0, 0.0), Point::new(1.0, 1.0)
+    ],
+    vec![[3, 4, 2], [2, 1, 0]]
+)]
+#[case::pentagon_2(
+    vec![
+        Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(0.5, 0.5),
+        Point::new(0.0, 1.0), Point::new(1.0, 1.0)
+    ],
+    vec![[2, 4, 3], [1, 2, 0]]
+)]
 fn test_triangulate_polygon_non_convex(
     #[case] polygon: Vec<Point>,
     #[case] expected: Vec<[usize; 3]>,
 ) {
-    let (triangles, points) = sweeping_line_triangulation(calc_dedup_edges(&vec![polygon.clone()]));
+    let (new_polygons, segments) = split_polygons_on_repeated_edges(&vec![polygon.clone()]);
+    assert_eq!(
+        new_polygons[0].iter().cloned().collect::<HashSet<_>>(),
+        polygon.iter().cloned().collect::<HashSet<_>>()
+    );
+    let (triangles, points) = sweeping_line_triangulation(segments);
     let triangles_ = renumerate_triangles(&polygon, &points, &triangles);
     assert_eq!(triangles_, expected);
 }

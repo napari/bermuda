@@ -89,8 +89,8 @@ fn get_points_edges(edges: &[Segment]) -> PointToEdges {
 #[inline]
 fn left_right_share_top(s1: &Segment, s2: &Segment) -> Ordering {
     match orientation(s1.bottom, s1.top, s2.bottom) {
-        Orientation::CounterClockwise => Ordering::Less,
-        Orientation::Clockwise => Ordering::Greater,
+        Orientation::CounterClockwise => Ordering::Greater,
+        Orientation::Clockwise => Ordering::Less,
         Orientation::Collinear => Ordering::Equal,
     }
 }
@@ -98,8 +98,8 @@ fn left_right_share_top(s1: &Segment, s2: &Segment) -> Ordering {
 #[inline]
 fn left_right_share_bottom(s1: &Segment, s2: &Segment) -> Ordering {
     match orientation(s1.top, s1.bottom, s2.top) {
-        Orientation::CounterClockwise => Ordering::Greater,
-        Orientation::Clockwise => Ordering::Less,
+        Orientation::CounterClockwise => Ordering::Less,
+        Orientation::Clockwise => Ordering::Greater,
         Orientation::Collinear => Ordering::Equal,
     }
 }
@@ -389,7 +389,10 @@ impl MonotonePolygonBuilder {
         interval_ref
             .borrow_mut()
             .replace_segment(&edge_top, edge_bottom);
-        self.segment_to_line.remove(&edge_top);
+        let val = self.segment_to_line.remove(&edge_top);
+        if val.is_none() {
+            panic!("Segment not found in the map");
+        }
 
         #[cfg(debug_assertions)]
         {
@@ -523,9 +526,9 @@ impl MonotonePolygonBuilder {
                 }
             }
             if edge.top == p {
-                top_segments.push(edge.clone());
-            } else {
                 bottom_segments.push(edge.clone());
+            } else {
+                top_segments.push(edge.clone());
             }
             segments_to_normal_process.push(edge.clone());
         }
