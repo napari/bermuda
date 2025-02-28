@@ -32,59 +32,29 @@ struct Interval {
     polygons_list: Vec<MonotonePolygon>,
 }
 
-#[derive(Debug, Clone)]
-struct PointEdgeInfo {
-    pub opposite_point: Point,
-}
+type PointToOppositeEdgeEnds = HashMap<Point, Vec<Point>>;
 
-// Implement comparison traits
-impl PartialEq for PointEdgeInfo {
-    fn eq(&self, other: &Self) -> bool {
-        self.opposite_point == other.opposite_point
-    }
-}
-
-impl Eq for PointEdgeInfo {}
-
-impl PartialOrd for PointEdgeInfo {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for PointEdgeInfo {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.opposite_point.cmp(&other.opposite_point)
-    }
-}
-
-type PointToEdges = HashMap<Point, Vec<PointEdgeInfo>>;
-
-fn get_points_edges(edges: &[Segment]) -> PointToEdges {
-    let mut point_to_edges = PointToEdges::new();
+fn get_points_edges(edges: &[Segment]) -> PointToOppositeEdgeEnds {
+    let mut point_to_edges = PointToOppositeEdgeEnds::new();
 
     // Populate the map with edges
     for edge in edges.iter() {
         point_to_edges
             .entry(edge.bottom)
             .or_default()
-            .push(PointEdgeInfo {
-                opposite_point: edge.top,
-            });
+            .push(edge.top);
 
         point_to_edges
             .entry(edge.top)
             .or_default()
-            .push(PointEdgeInfo {
-                opposite_point: edge.bottom,
-            });
+            .push(edge.bottom);
     }
 
     // Sort each vector of edges
     for edges_vec in point_to_edges.values_mut() {
         edges_vec.sort_by(|a, b| {
             // Note: We reverse the comparison to match the C++ version
-            b.opposite_point.cmp(&a.opposite_point)
+            b.cmp(a)
         });
     }
 
@@ -200,7 +170,7 @@ fn get_left_right_edges_bottom(s1: &Segment, s2: &Segment) -> (Segment, Segment)
 
 struct MonotonePolygonBuilder {
     segment_to_line: HashMap<Segment, Rc<RefCell<Interval>>>,
-    point_to_edges: HashMap<Point, Vec<PointEdgeInfo>>,
+    point_to_edges: PointToOppositeEdgeEnds,
     monotone_polygons: Vec<MonotonePolygon>,
 }
 
@@ -535,18 +505,18 @@ pub enum PointType {
     Normal(Segment, Segment),
 }
 
-fn get_point_type(p: Point, point_to_edges: &PointToEdges) -> PointType {
+fn get_point_type(p: Point, point_to_edges: &PointToOppositeEdgeEnds) -> PointType {
     match point_to_edges.get(&p) {
         None => panic!("Point not found in the map"),
-        Some(edges) => {
-            if edges.is_empty() {
+        Some(opposite_point) => {
+            if opposite_point.is_empty() {
                 panic!("Empty point found in the map");
             }
 
             // Convert edge info to segments
-            let segments: Vec<Segment> = edges
+            let segments: Vec<Segment> = opposite_point
                 .iter()
-                .map(|edge_info| Segment::new(p, edge_info.opposite_point))
+                .map(|opposite_point| Segment::new(p, *opposite_point))
                 .collect();
 
             if segments.len() != 2 {
@@ -556,12 +526,12 @@ fn get_point_type(p: Point, point_to_edges: &PointToEdges) -> PointType {
             let (seg1, seg2) = (segments[0].clone(), segments[1].clone());
 
             // Both opposite points are less than p -> Split point
-            if edges[0].opposite_point < p && edges[1].opposite_point < p {
+            if opposite_point[0] < p && opposite_point[1] < p {
                 let (left, right) = get_left_right_edges_top(&seg1, &seg2);
                 return PointType::Split(left, right);
             }
             // Both opposite points are greater than p -> Merge point
-            if p < edges[0].opposite_point && p < edges[1].opposite_point {
+            if p < opposite_point[0] && p < opposite_point[1] {
                 let (left, right) = get_left_right_edges_bottom(&seg1, &seg2);
                 return PointType::Merge(left, right);
             }
@@ -646,47 +616,19 @@ mod tests {
         assert_eq!(point_to_edges.len(), 4);
         assert_eq!(
             point_to_edges[&Point::new(1.0, 0.0)],
-            vec![
-                PointEdgeInfo {
-                    opposite_point: Point::new(2.0, 1.0)
-                },
-                PointEdgeInfo {
-                    opposite_point: Point::new(0.0, 1.0)
-                }
-            ]
+            vec![Point::new(2.0, 1.0), Point::new(0.0, 1.0)]
         );
         assert_eq!(
             point_to_edges[&Point::new(2.0, 1.0)],
-            vec![
-                PointEdgeInfo {
-                    opposite_point: Point::new(1.0, 2.0)
-                },
-                PointEdgeInfo {
-                    opposite_point: Point::new(1.0, 0.0)
-                }
-            ]
+            vec![Point::new(1.0, 2.0), Point::new(1.0, 0.0)]
         );
         assert_eq!(
             point_to_edges[&Point::new(1.0, 2.0)],
-            vec![
-                PointEdgeInfo {
-                    opposite_point: Point::new(2.0, 1.0)
-                },
-                PointEdgeInfo {
-                    opposite_point: Point::new(0.0, 1.0)
-                }
-            ]
+            vec![Point::new(2.0, 1.0), Point::new(0.0, 1.0)]
         );
         assert_eq!(
             point_to_edges[&Point::new(0.0, 1.0)],
-            vec![
-                PointEdgeInfo {
-                    opposite_point: Point::new(1.0, 2.0)
-                },
-                PointEdgeInfo {
-                    opposite_point: Point::new(1.0, 0.0)
-                }
-            ]
+            vec![Point::new(1.0, 2.0), Point::new(1.0, 0.0)]
         );
     }
 
