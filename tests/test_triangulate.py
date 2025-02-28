@@ -247,6 +247,27 @@ def test_triangulate_polygon_in_polygon_numpy():
     assert len(triangles) == 8
 
 
+def test_triangulate_polygon_with_hole():
+    polygon = np.array(
+        [
+            (0, 0),
+            (10, 0),
+            (10, 10),
+            (0, 10),
+            (0, 0),
+            (4, 4),
+            (6, 4),
+            (6, 6),
+            (4, 6),
+            (4, 4),
+        ],
+        dtype=np.float32,
+    )
+    (triangles, points), _edges = triangulate_polygons_with_edge([polygon])
+    assert len(points) == 8
+    assert len(triangles) == 8
+
+
 def test_triangulate_polygon_segfault1():
     """Test on polygon that lead to segfault during test"""
     polygon = np.array(
