@@ -12,4 +12,4 @@ pub use crate::face_triangulation::sweeping_line_triangulation;
 pub use crate::intersection::split_polygons_on_repeated_edges;
 pub use crate::path_triangulation::PathTriangulation;
 pub use crate::path_triangulation::{triangulate_path_edge, triangulate_paths_edge};
-pub use crate::point::Point;
+pub use crate::point::{Point, Segment, Triangle};

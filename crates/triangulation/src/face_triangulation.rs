@@ -6,6 +6,55 @@ use std::collections::{BTreeSet, HashMap};
 use std::fmt;
 use std::rc::Rc;
 
+/// A mapping from a point to all points connected to it by segments.
+///
+/// # Key (Point)
+/// Represents a vertex in the geometry.
+///
+/// # Value (Vec<Point>)
+/// Contains a list of points that are connected to the key point by segments.
+type PointToSegmentEndPoints = HashMap<Point, Vec<Point>>;
+
+/// Builds a mapping between points and their connected segment endpoints.
+///
+/// For each segment in the input, creates bidirectional mappings between its endpoints.
+/// The resulting map contains entries for both the top and bottom points of each segment,
+/// with their respective opposite endpoints stored in the value vectors.
+///
+/// # Arguments
+/// * `segments` - A slice of segments to process
+///
+/// # Returns
+/// A `PointToSegmentEndPoints` containing the mapping where:
+/// - Each key is a point from the input segments
+/// - Each value is a vector of points connected to the key point
+fn get_points_segments(segments: &[Segment]) -> PointToSegmentEndPoints {
+    let mut point_to_segments_ends = PointToSegmentEndPoints::new();
+
+    // Populate the map with edges
+    for edge in segments.iter() {
+        point_to_segments_ends
+            .entry(edge.bottom)
+            .or_default()
+            .push(edge.top);
+
+        point_to_segments_ends
+            .entry(edge.top)
+            .or_default()
+            .push(edge.bottom);
+    }
+
+    // Sort each vector of edges
+    for edges_vec in point_to_segments_ends.values_mut() {
+        edges_vec.sort_by(|a, b| {
+            // Note: We reverse the comparison to match the C++ version
+            b.cmp(a)
+        });
+    }
+
+    point_to_segments_ends
+}
+
 /// Represents an interval in a sweeping line algorithm for polygon triangulation.
 ///
 /// An interval is defined by two segments (left and right boundaries) and maintains
@@ -23,7 +72,6 @@ use std::rc::Rc;
 /// This struct is part of the sweep line algorithm used in polygon triangulation.
 /// It keeps track of the state between the left and right segments as the sweep line
 /// moves through the polygon, helping to build monotone polygons during the process.
-
 #[derive(Clone)]
 struct Interval {
     last_seen: Point,
@@ -32,57 +80,7 @@ struct Interval {
     polygons_list: Vec<MonotonePolygon>,
 }
 
-type PointToOppositeEdgeEnds = HashMap<Point, Vec<Point>>;
-
-fn get_points_edges(edges: &[Segment]) -> PointToOppositeEdgeEnds {
-    let mut point_to_edges = PointToOppositeEdgeEnds::new();
-
-    // Populate the map with edges
-    for edge in edges.iter() {
-        point_to_edges
-            .entry(edge.bottom)
-            .or_default()
-            .push(edge.top);
-
-        point_to_edges
-            .entry(edge.top)
-            .or_default()
-            .push(edge.bottom);
-    }
-
-    // Sort each vector of edges
-    for edges_vec in point_to_edges.values_mut() {
-        edges_vec.sort_by(|a, b| {
-            // Note: We reverse the comparison to match the C++ version
-            b.cmp(a)
-        });
-    }
-
-    point_to_edges
-}
-
-#[inline]
-fn left_right_share_top(s1: &Segment, s2: &Segment) -> Ordering {
-    match orientation(s1.bottom, s1.top, s2.bottom) {
-        Orientation::CounterClockwise => Ordering::Greater,
-        Orientation::Clockwise => Ordering::Less,
-        Orientation::Collinear => Ordering::Equal,
-    }
-}
-
-#[inline]
-fn left_right_share_bottom(s1: &Segment, s2: &Segment) -> Ordering {
-    match orientation(s1.top, s1.bottom, s2.top) {
-        Orientation::CounterClockwise => Ordering::Less,
-        Orientation::Clockwise => Ordering::Greater,
-        Orientation::Collinear => Ordering::Equal,
-    }
-}
-
 impl Interval {
-    // Default constructor not needed in Rust as we're not using it
-
-    // Constructor with segments only
     fn new(p: Point, left: Segment, right: Segment) -> Self {
         Self {
             last_seen: p,
@@ -92,7 +90,6 @@ impl Interval {
         }
     }
 
-    // Constructor with segments and polygon
     fn with_polygon(p: Point, left: Segment, right: Segment, polygon: MonotonePolygon) -> Self {
         let polygons_list = vec![polygon];
 
@@ -152,6 +149,29 @@ impl fmt::Debug for Interval {
     }
 }
 
+/// Helper function to sort segments that share top points.
+/// needed for process intersection point
+#[inline]
+fn left_right_share_top(s1: &Segment, s2: &Segment) -> Ordering {
+    match orientation(s1.bottom, s1.top, s2.bottom) {
+        Orientation::CounterClockwise => Ordering::Greater,
+        Orientation::Clockwise => Ordering::Less,
+        Orientation::Collinear => Ordering::Equal,
+    }
+}
+
+/// Helper function to sort segments that share bottom points.
+/// needed for process intersection point
+#[inline]
+fn left_right_share_bottom(s1: &Segment, s2: &Segment) -> Ordering {
+    match orientation(s1.top, s1.bottom, s2.top) {
+        Orientation::CounterClockwise => Ordering::Less,
+        Orientation::Clockwise => Ordering::Greater,
+        Orientation::Collinear => Ordering::Equal,
+    }
+}
+
+/// To distinguish left and right segments for split/start point  
 fn get_left_right_edges_top(s1: &Segment, s2: &Segment) -> (Segment, Segment) {
     if orientation(s1.bottom, s1.top, s2.bottom) == Orientation::CounterClockwise {
         (s2.clone(), s1.clone())
@@ -160,6 +180,7 @@ fn get_left_right_edges_top(s1: &Segment, s2: &Segment) -> (Segment, Segment) {
     }
 }
 
+/// To distinguish left and right segments for merge/end point
 fn get_left_right_edges_bottom(s1: &Segment, s2: &Segment) -> (Segment, Segment) {
     if orientation(s1.top, s1.bottom, s2.top) == Orientation::Clockwise {
         (s2.clone(), s1.clone())
@@ -168,15 +189,39 @@ fn get_left_right_edges_bottom(s1: &Segment, s2: &Segment) -> (Segment, Segment)
     }
 }
 
+/// Builder for decomposing a polygon into monotone polygons using a sweep line algorithm.
+///
+/// This struct maintains the state necessary for converting a polygon described by segments
+/// into a collection of monotone polygons, which can then be easily triangulated.
+///
+/// # Fields
+/// * `segment_to_line` - Maps segments to their associated intervals in the sweep line.
+///                      Uses interior mutability (`RefCell`) to allow modification during traversal
+///                      and reference counting (`Rc`) for shared ownership.
+///
+/// * `point_to_edges` - Maps each vertex to its connected segment endpoints, maintaining the
+///                      topological relationships between points in the polygon.
+///
+/// * `monotone_polygons` - Accumulates the resulting monotone polygons as they are constructed
+///                         during the sweep line process.
+///
+/// # Algorithm
+/// The builder implements a sweep line algorithm that:
+/// 1. Processes vertices in order
+/// 2. Maintains active intervals between segments
+/// 3. Builds monotone polygons incrementally
+///
+/// This implementation follows the standard polygon triangulation algorithm that first
+/// decomposes a polygon into monotone pieces before triangulation.
 struct MonotonePolygonBuilder {
     segment_to_line: HashMap<Segment, Rc<RefCell<Interval>>>,
-    point_to_edges: PointToOppositeEdgeEnds,
+    point_to_edges: PointToSegmentEndPoints,
     monotone_polygons: Vec<MonotonePolygon>,
 }
 
 impl MonotonePolygonBuilder {
     pub fn new(edges: Vec<Segment>) -> Self {
-        let point_to_edges = get_points_edges(&edges);
+        let point_to_edges = get_points_segments(&edges);
         Self {
             segment_to_line: HashMap::new(),
             point_to_edges,
@@ -497,6 +542,7 @@ impl MonotonePolygonBuilder {
     }
 }
 
+/// Enum for encode point type for sweeping line algorithm  
 #[derive(Debug, PartialEq, Eq)]
 pub enum PointType {
     Intersection(Vec<Segment>),
@@ -505,7 +551,8 @@ pub enum PointType {
     Normal(Segment, Segment),
 }
 
-fn get_point_type(p: Point, point_to_edges: &PointToOppositeEdgeEnds) -> PointType {
+/// Get point type based on adjacent segm
+fn get_point_type(p: Point, point_to_edges: &PointToSegmentEndPoints) -> PointType {
     match point_to_edges.get(&p) {
         None => panic!("Point not found in the map"),
         Some(opposite_point) => {
@@ -541,6 +588,20 @@ fn get_point_type(p: Point, point_to_edges: &PointToOppositeEdgeEnds) -> PointTy
     }
 }
 
+/// Triangulates a collection of monotone polygons and returns the resulting triangles with vertex indices.
+///
+/// This function converts geometric triangulation (using points) into a topological representation
+/// using vertex indices. Each resulting triangle references vertices by their indices in the input
+/// points array rather than by their geometric coordinates.
+///
+/// # Arguments
+///
+/// * `monotone_polygons` - A slice of monotone polygons to be triangulated
+/// * `points` - A slice of all vertices in the geometry. Used to map Points to their indices
+///
+/// # Returns
+///
+/// A vector of triangles where each triangle's vertices are represented by indices into the `points` array.
 fn triangulate_monotone_polygons(
     monotone_polygons: &[MonotonePolygon],
     points: &[Point],
@@ -564,6 +625,43 @@ fn triangulate_monotone_polygons(
     triangles
 }
 
+/// Triangulates a polygon using a sweep line algorithm.
+///
+/// Implements polygon triangulation by first decomposing the input into monotone polygons
+/// and then triangulating each monotone piece. Uses a top-to-bottom sweep line approach.
+///
+/// # Algorithm Steps
+/// 1. Builds initial point-to-edge relationships
+/// 2. Processes vertices in descending y-coordinate order
+/// 3. Handles four types of vertices:
+///    - Intersection points (multiple segments meet)
+///    - Split points (vertex splits the polygon)
+///    - Merge points (vertex merges polygon parts)
+///    - Normal points (regular vertices)
+///
+/// # Arguments
+/// * `edges` - Vector of segments describing the polygon boundary
+///
+/// # Returns
+/// A tuple containing:
+/// * `Vec<Triangle>` - The resulting triangulation as vertex-indexed triangles
+/// * `Vec<Point>` - Sorted list of all vertices (used for index reference)
+///
+/// # Panics
+/// May panic if the input geometry is invalid or contains self-intersections
+/// that cannot be properly handled.
+///
+/// # Example
+/// ```
+/// use triangulation::{sweeping_line_triangulation,Point,Segment};
+///
+/// let edges = vec![
+///     Segment::new(Point::new(0.0, 0.0), Point::new(1.0, 0.0)),
+///     Segment::new(Point::new(1.0, 0.0), Point::new(0.5, 1.0)),
+///     Segment::new(Point::new(0.5, 1.0), Point::new(0.0, 0.0)),
+/// ];
+/// let (triangles, points) = sweeping_line_triangulation(edges);
+/// ```
 pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> (Vec<Triangle>, Vec<Point>) {
     let mut builder = MonotonePolygonBuilder::new(edges);
     let mut points = builder
@@ -612,7 +710,7 @@ mod tests {
     #[rstest]
     fn test_get_points_edges_diamond() {
         let edges = calc_dedup_edges(&vec![DIAMOND.to_vec()]);
-        let point_to_edges = get_points_edges(&edges);
+        let point_to_edges = get_points_segments(&edges);
         assert_eq!(point_to_edges.len(), 4);
         assert_eq!(
             point_to_edges[&Point::new(1.0, 0.0)],
@@ -635,7 +733,7 @@ mod tests {
     #[rstest]
     fn test_get_point_type() {
         let edges = calc_dedup_edges(&vec![DIAMOND.to_vec()]);
-        let point_to_edges = get_points_edges(&edges);
+        let point_to_edges = get_points_segments(&edges);
         assert_eq!(
             get_point_type(Point::new(1.0, 2.0), &point_to_edges),
             PointType::Split(
