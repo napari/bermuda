@@ -290,11 +290,13 @@ impl MonotonePolygonBuilder {
             .ok_or_else(|| "Segment not found in the map".to_string())?
             .clone();
 
-        if interval_ref.borrow().polygons_list.len() > 1 {
-            if edge_top == interval_ref.borrow().right_segment {
+        let mut interval = interval_ref.borrow_mut();
+
+        if interval.polygons_list.len() > 1 {
+            if edge_top == interval.right_segment {
                 // We are on right side of the interval
                 // End all polygons except the first one
-                for poly in interval_ref.borrow_mut().polygons_list.iter_mut().skip(1) {
+                for poly in interval.polygons_list.iter_mut().skip(1) {
                     let mut polygon = poly.clone();
                     polygon.bottom = Some(p);
                     self.monotone_polygons.push(polygon);
@@ -302,35 +304,31 @@ impl MonotonePolygonBuilder {
             } else {
                 // We are on left side of the interval
                 // End all polygons except the last one
-                if let Some((last, all_but_last)) =
-                    interval_ref.borrow_mut().polygons_list.split_last_mut()
-                {
+                if let Some((last, all_but_last)) = interval.polygons_list.split_last_mut() {
                     for poly in all_but_last {
                         let mut polygon = poly.clone();
                         polygon.bottom = Some(p);
                         self.monotone_polygons.push(polygon);
                     }
-                    interval_ref.borrow_mut().polygons_list[0] = last.to_owned();
+                    interval.polygons_list[0] = last.to_owned();
                 }
             }
-            interval_ref.borrow_mut().polygons_list.truncate(1);
+            interval.polygons_list.truncate(1);
         }
 
         // Update the remaining polygon
-        if edge_top == interval_ref.borrow().right_segment {
-            if let Some(polygon) = interval_ref.borrow_mut().polygons_list.first_mut() {
+        if edge_top == interval.right_segment {
+            if let Some(polygon) = interval.polygons_list.first_mut() {
                 polygon.right.push(p);
             }
-        } else if let Some(polygon) = interval_ref.borrow_mut().polygons_list.first_mut() {
+        } else if let Some(polygon) = interval.polygons_list.first_mut() {
             polygon.left.push(p);
         }
 
         self.segment_to_line
             .insert(edge_bottom.clone(), interval_ref.clone());
-        interval_ref.borrow_mut().last_seen = p;
-        interval_ref
-            .borrow_mut()
-            .replace_segment(&edge_top, edge_bottom);
+        interval.last_seen = p;
+        interval.replace_segment(&edge_top, edge_bottom);
         let val = self.segment_to_line.remove(&edge_top);
         if val.is_none() {
             panic!("Segment not found in the map");
@@ -338,16 +336,10 @@ impl MonotonePolygonBuilder {
 
         #[cfg(debug_assertions)]
         {
-            if !self
-                .segment_to_line
-                .contains_key(&interval_ref.borrow().left_segment)
-            {
+            if !self.segment_to_line.contains_key(&interval.left_segment) {
                 return Err("Left segment not found in the map".to_string());
             }
-            if !self
-                .segment_to_line
-                .contains_key(&interval_ref.borrow().right_segment)
-            {
+            if !self.segment_to_line.contains_key(&interval.right_segment) {
                 return Err("Right segment not found in the map".to_string());
             }
         }
