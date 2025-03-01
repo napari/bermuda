@@ -68,10 +68,11 @@ fn triangulate_path_edge(
         limit.unwrap_or(3.0),
         bevel.unwrap_or(false),
     );
-    triangulation_to_edge_triangulate(py, &result)
+    path_triangulation_to_numpy_arrays(py, &result)
 }
 
-fn triangulation_to_edge_triangulate(
+/// Convert internal representation of path triangulation into numpy arrays
+fn path_triangulation_to_numpy_arrays(
     py: Python<'_>,
     data: &PathTriangulation,
 ) -> PyEdgeTriangulation {
@@ -101,7 +102,8 @@ fn triangulation_to_edge_triangulate(
     ))
 }
 
-fn triangulation_to_face_triangulate(
+/// Convert internal representation of face triangulation into numpy arrays
+fn face_triangulation_to_numpy_arrays(
     py: Python<'_>,
     triangles: &[Triangle],
     points: &[Point],
@@ -125,6 +127,47 @@ fn triangulation_to_face_triangulate(
     ))
 }
 
+/// Triangulates multiple polygons and generates both face and edge triangulations
+///
+/// This function performs two types of triangulation:
+/// 1. Face triangulation of the polygon interiors
+/// 2. Edge triangulation for the polygon boundaries
+///
+/// Parameters
+/// ----------
+/// polygons : List[numpy.ndarray]
+///     List of Nx2 arrays where each array contains the vertices of a polygon
+///     as (x, y) coordinates. Each polygon should be defined in counter-clockwise order.
+///
+/// Returns
+/// -------
+/// tuple
+///     A tuple containing two elements:
+///     
+///     1. Face triangulation (tuple):
+///         - triangles : numpy.ndarray
+///             Mx3 array of vertex indices forming triangles
+///         - points : numpy.ndarray
+///             Px2 array of vertex coordinates
+///     
+///     2. Edge triangulation (tuple):
+///         - centers : numpy.ndarray
+///             Qx2 array of central coordinates of edge triangles
+///         - offsets : numpy.ndarray
+///             Qx2 array of offset vectors for edge vertices
+///         - triangles : numpy.ndarray
+///             Rx3 array of vertex indices for edge triangles
+///
+/// Notes
+/// -----
+/// The function first processes any self-intersecting edges and repeated vertices,
+/// then performs face triangulation using a sweeping line algorithm, and finally
+/// generates edge triangulation for the polygon boundaries.
+///
+/// The edge triangulation uses default parameters:
+/// - closed = true (treats polygons as closed)
+/// - miter_limit = 3.0
+/// - bevel = false (uses miter joins by default)
 #[pyfunction]
 #[pyo3(signature = (polygons))]
 fn triangulate_polygons_with_edge(
@@ -151,8 +194,8 @@ fn triangulate_polygons_with_edge(
     let (face_triangles, face_points) = sweeping_line_triangulation(segments);
     let path_triangulation = triangulate_paths_edge(&new_polygons, true, 3.0, false);
     Ok((
-        triangulation_to_face_triangulate(py, &face_triangles, &face_points)?,
-        triangulation_to_edge_triangulate(py, &path_triangulation)?,
+        face_triangulation_to_numpy_arrays(py, &face_triangles, &face_points)?,
+        path_triangulation_to_numpy_arrays(py, &path_triangulation)?,
     ))
 }
 
