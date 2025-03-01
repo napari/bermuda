@@ -223,6 +223,23 @@ TEST_POLYGONS = [
 
 
 def _renumerate_triangles(polygon, points, triangles):
+    """As `py:func:triangulate_polygons_with_edge` change order of points
+    we need to fix triangle indices, to be able to compare results.
+
+    Parameters
+    ----------
+    polygon : list of points
+        Original polygon, as list of points
+    points : array-like
+        Points in order returned by `triangulate_polygons_with_edge`
+    triangles : array-like
+        Triangles returned by `triangulate_polygons_with_edge`
+
+    Returns
+    -------
+    list of tuple
+        Triangles with fixed indices, as list of tuples of point indices
+    """
     point_num = {tuple(point): i for i, point in enumerate(polygon)}
     return [
         tuple(point_num[tuple(points[point])] for point in triangle)

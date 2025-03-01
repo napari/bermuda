@@ -221,6 +221,8 @@ pub fn triangulate_path_edge(
     result
 }
 
+/// For list of polygon edges (boundaries) generate its triangulation.
+/// This function is to have consistent numeration of triangles.  
 pub fn triangulate_paths_edge(
     paths: &[Vec<point::Point>],
     closed: bool,

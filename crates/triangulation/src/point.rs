@@ -307,6 +307,7 @@ impl Triangle {
         Triangle { x, y, z }
     }
 
+    /// return copy of Triangle with indexes shifted by a given value.
     pub fn shifted_by(&self, shift: Index) -> Self {
         Triangle {
             x: self.x + shift,
