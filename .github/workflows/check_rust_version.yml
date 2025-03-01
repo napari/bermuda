@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Extract pinned Rust version
         id: pinned
@@ -28,7 +28,7 @@ jobs:
             echo "Could not find pinned version in rust-toolchain.toml"
             exit 1
           fi
-          echo "pinned=${PINNED}" >> $GITHUB_OUTPUT
+          echo "pinned=${PINNED}" >> "$GITHUB_OUTPUT"
           echo "Pinned Rust version: $PINNED"
 
       - name: Get latest stable Rust version
@@ -42,7 +42,7 @@ jobs:
             echo "Could not determine latest stable version"
             exit 1
           fi
-          echo "stable=${LATEST}" >> $GITHUB_OUTPUT
+          echo "stable=${LATEST}" >> "$GITHUB_OUTPUT"
           echo "Latest stable Rust version: $LATEST"
           
 
