@@ -44,7 +44,7 @@ jobs:
           fi
           echo "stable=${LATEST}" >> "$GITHUB_OUTPUT"
           echo "Latest stable Rust version: $LATEST"
-          
+
 
       - name: Report outdated rust
         if: steps.pinned.outputs.pinned != steps.stable.outputs.stable
