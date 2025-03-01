@@ -131,7 +131,7 @@ fn triangulate_polygons_with_edge(
     py: Python<'_>,
     polygons: Vec<PyReadonlyArray2<'_, f32>>,
 ) -> PyPolygonTriangulation {
-    // Convert the numpy array into a rust compatible representations which is a vector of points.
+    // Convert the numpy array into a rust compatible representation which is a vector of points.
     let polygons_: Vec<Vec<Point>> = polygons
         .into_iter()
         .map(|polygon| {
