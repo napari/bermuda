@@ -1,4 +1,5 @@
 name: Actionlint
+# Static checking for GitHub action workflows
 # https://github.com/rhysd/actionlint
 
 on:
