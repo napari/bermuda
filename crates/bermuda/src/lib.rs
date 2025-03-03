@@ -1,3 +1,4 @@
+#![allow(clippy::useless_conversion)]
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
