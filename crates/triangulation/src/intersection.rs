@@ -659,7 +659,7 @@ pub fn split_polygons_on_repeated_edges(
     let points: Vec<point::Point> = edge_map.keys().copied().collect();
 
     for start_point in points {
-        if !edge_map.get(&start_point).map_or(true, |node| node.visited) {
+        if !edge_map.get(&start_point).is_none_or(|node| node.visited) {
             let mut current_polygon = Vec::new();
             let mut stack = vec![start_point];
 
@@ -674,7 +674,7 @@ pub fn split_polygons_on_repeated_edges(
                         .edges
                         .iter()
                         .copied()
-                        .filter(|&next| !edge_map.get(&next).map_or(true, |n| n.visited))
+                        .filter(|&next| !edge_map.get(&next).is_none_or(|n| n.visited))
                         .collect();
 
                     // Now we can modify the current node
