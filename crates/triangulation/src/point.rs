@@ -365,9 +365,9 @@ pub enum Orientation {
 ///
 /// # Arguments
 ///
-/// * `p` - The first [`Point`](point::Point).
-/// * `q` - The second [`Point`](point::Point).
-/// * `r` - The third [`Point`](point::Point).
+/// * `p` - The first [`Point`].
+/// * `q` - The second [`Point`].
+/// * `r` - The third [`Point`].
 ///
 /// # Returns
 ///
