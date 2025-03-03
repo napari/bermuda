@@ -1,0 +1,58 @@
+name: Check Rust Version
+
+on:
+  schedule:
+    # Runs daily at midnight UTC; adjust as needed.
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-rust-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract pinned Rust version
+        id: pinned
+        run: |
+          # Assumes rust-toolchain.toml is in the repo root and looks like:
+          # [toolchain]
+          # channel = "1.68.0"
+          PINNED=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          if [ -z "$PINNED" ]; then
+            echo "Could not find pinned version in rust-toolchain.toml"
+            exit 1
+          fi
+          echo "pinned=${PINNED}" >> "$GITHUB_OUTPUT"
+          echo "Pinned Rust version: $PINNED"
+
+      - name: Get latest stable Rust version
+        id: stable
+        run: |
+          # Download the official channel file for stable releases.
+          curl -sSL https://static.rust-lang.org/dist/channel-rust-stable.toml -o channel.toml
+          # Extract the version (assumes a line like: version = "1.69.0 (abcdef123 2025-02-xx)")
+          LATEST=$(grep '^version =' channel.toml | head -n1 | sed 's/version = "\(.*\)"/\1/' | cut -d' ' -f1)
+          if [ -z "$LATEST" ]; then
+            echo "Could not determine latest stable version"
+            exit 1
+          fi
+          echo "stable=${LATEST}" >> "$GITHUB_OUTPUT"
+          echo "Latest stable Rust version: $LATEST"
+
+
+      - name: Report outdated rust
+        if: steps.pinned.outputs.pinned != steps.stable.outputs.stable
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          CURRENT_RUST_VERSION: ${{ steps.pinned.outputs.pinned }}
+          LATEST_RUST_VERSION: ${{ steps.stable.outputs.stable }}
+          TITLE: "[rust check] outdated rust toolchain"
+        with:
+          filename: .github/OUTDATED_RUST_TEMPLATE.md
+          update_existing: true

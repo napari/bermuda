@@ -30,8 +30,6 @@ dependencies = [
 [tool.setuptools_scm]
 write_to = "python/bermuda/_version.py"
 
-
-
 [tool.setuptools.packages]
 # Pure Python packages/modules
 find = { where = ["python"] }
