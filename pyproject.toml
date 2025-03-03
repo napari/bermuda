@@ -154,7 +154,10 @@ skip = "pp*macos* pp31* pp39-manylinux*"
 build = "*64"
 
 [tool.cibuildwheel.linux]
-before-all = "curl https://sh.rustup.rs -sSf | sh -s -- -y"
+before-all = [
+    "curl https://sh.rustup.rs -sSf | sh -s -- -y",
+    "rustup show"
+]
 environment = { PATH="$HOME/.cargo/bin:$PATH" }
 
 [tool.cibuildwheel.macos]
