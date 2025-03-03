@@ -156,6 +156,7 @@ build = "*64"
 [tool.cibuildwheel.linux]
 before-all = [
     "curl https://sh.rustup.rs -sSf | sh -s -- -y",
+    "VERSION=$(grep '^channel' rust-toolchain.toml | cut -d '\"' -f2) && rustup toolchain install $VERSION && rustup override set $VERSION",
     "rustup show"
 ]
 environment = { PATH="$HOME/.cargo/bin:$PATH" }
