@@ -165,5 +165,5 @@ select = "*-macosx*arm64"
 environment = { MACOSX_DEPLOYMENT_TARGET="11.0"}
 
 [[tool.cibuildwheel.overrides]]
-select = "*cp3{2,3,4,5}*macosx*x86_64*"
+select = "*cp31{2,3,4,5}*macosx*x86_64*"
 environment = { MACOSX_DEPLOYMENT_TARGET="10.13"}
