@@ -156,3 +156,14 @@ build = "*64"
 [tool.cibuildwheel.linux]
 before-all = "curl https://sh.rustup.rs -sSf | sh -s -- -y"
 environment = { PATH="$HOME/.cargo/bin:$PATH" }
+
+[tool.cibuildwheel.macos]
+environment = { MACOSX_DEPLOYMENT_TARGET="10.12"}
+
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx*arm64"
+environment = { MACOSX_DEPLOYMENT_TARGET="11.0"}
+
+[[tool.cibuildwheel.overrides]]
+select = "*cp3{2,3,4,5}*macosx*x86_64*"
+environment = { MACOSX_DEPLOYMENT_TARGET="10.13"}
