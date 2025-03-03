@@ -325,7 +325,7 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
 ///
 /// # Returns
 ///
-/// A [`HashSet`](HashSet) of [`OrderedPair`], where each `OrderedPair` contains the indices of two intersecting segments.
+/// A [`HashSet`] of [`OrderedPair`], where each `OrderedPair` contains the indices of two intersecting segments.
 ///
 /// # Example
 ///
