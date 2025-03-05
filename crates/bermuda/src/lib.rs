@@ -127,6 +127,24 @@ fn face_triangulation_to_numpy_arrays(
     ))
 }
 
+fn numpy_polygons_to_rust_polygons(polygons: Vec<PyReadonlyArray2<'_, f32>>) -> Vec<Vec<Point>> {
+    let polygons_: Vec<Vec<Point>> = polygons
+        .into_iter()
+        .map(|polygon| {
+            polygon
+                .as_array()
+                .rows()
+                .into_iter()
+                .map(|row| Point {
+                    x: row[0],
+                    y: row[1],
+                })
+                .collect()
+        })
+        .collect();
+    polygons_
+}
+
 /// Triangulates multiple polygons and generates both face and edge triangulations
 ///
 /// This function performs two types of triangulation:
@@ -175,20 +193,7 @@ fn triangulate_polygons_with_edge(
     polygons: Vec<PyReadonlyArray2<'_, f32>>,
 ) -> PyPolygonTriangulation {
     // Convert the numpy array into a rust compatible representation which is a vector of points.
-    let polygons_: Vec<Vec<Point>> = polygons
-        .into_iter()
-        .map(|polygon| {
-            polygon
-                .as_array()
-                .rows()
-                .into_iter()
-                .map(|row| Point {
-                    x: row[0],
-                    y: row[1],
-                })
-                .collect()
-        })
-        .collect();
+    let polygons_ = numpy_polygons_to_rust_polygons(polygons);
 
     let (new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
     let (face_triangles, face_points) = sweeping_line_triangulation(segments);
@@ -199,9 +204,50 @@ fn triangulate_polygons_with_edge(
     ))
 }
 
+/// Performs face triangulation of multiple polygons
+///
+/// Parameters
+/// ----------
+/// polygons : List[numpy.ndarray]
+///     List of Nx2 arrays where each array contains the vertices of a polygon
+///     as (x, y) coordinates. Each polygon should be defined in counter-clockwise order.
+///
+/// Returns
+/// -------
+/// tuple
+///     A tuple containing two elements:
+///     - triangles : numpy.ndarray
+///         Mx3 array of vertex indices that form the triangulation
+///     - points : numpy.ndarray
+///         Px2 array of vertex coordinates used in the triangulation
+///
+/// Notes
+/// -----
+/// The function processes the input polygons by:
+/// 1. Converting the input NumPy arrays to Rust-compatible polygon representation
+/// 2. Handling self-intersecting edges and repeated vertices
+/// 3. Performing face triangulation using a sweeping line algorithm
+///
+/// The function returns only the face triangulation without edge triangulation,
+/// making it suitable for cases where only the interior triangulation is needed.
+#[pyfunction]
+#[pyo3(signature = (polygons))]
+fn triangulate_polygons_face(
+    py: Python<'_>,
+    polygons: Vec<PyReadonlyArray2<'_, f32>>,
+) -> PyFaceTriangulation {
+    // Convert the numpy array into a rust compatible representation which is a vector of points.
+    let polygons_ = numpy_polygons_to_rust_polygons(polygons);
+
+    let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
+    let (face_triangles, face_points) = sweeping_line_triangulation(segments);
+    face_triangulation_to_numpy_arrays(py, &face_triangles, &face_points)
+}
+
 #[pymodule]
 fn _bermuda(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(triangulate_path_edge, m)?)?;
     m.add_function(wrap_pyfunction!(triangulate_polygons_with_edge, m)?)?;
+    m.add_function(wrap_pyfunction!(triangulate_polygons_face, m)?)?;
     Ok(())
 }
