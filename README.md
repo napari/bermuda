@@ -12,7 +12,7 @@ Currently, this package exports three functions:
 * `triangulate_polygons_face` – polygon face triangulation
 * `triangulate_polygons_with_edge` – polygon face and border path triangulation
 
-All functions accept only array data as array of `float32` are supported.
+All functions accept only numpy arrays with data type `float32`.
 
 Below are signatures with docstrings for document API.
 
