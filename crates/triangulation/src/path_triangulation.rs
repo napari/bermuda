@@ -220,3 +220,30 @@ pub fn triangulate_path_edge(
     result.fix_triangle_orientation();
     result
 }
+
+/// For list of polygon edges (boundaries) generate its triangulation.
+/// This function is to have consistent numeration of triangles.  
+pub fn triangulate_paths_edge(
+    paths: &[Vec<point::Point>],
+    closed: bool,
+    limit: f32,
+    bevel: bool,
+) -> PathTriangulation {
+    let mut result = PathTriangulation::new();
+    let mut shift = 0;
+    for path in paths.iter() {
+        let sub_res = triangulate_path_edge(path, closed, limit, bevel);
+        let centers_len = sub_res.centers.len();
+        result.centers.extend(sub_res.centers);
+        result.offsets.extend(sub_res.offsets);
+        result.triangles.extend(
+            sub_res
+                .triangles
+                .into_iter()
+                .map(|triangle| triangle.shifted_by(shift)),
+        );
+        shift += centers_len;
+    }
+
+    result
+}

@@ -16,5 +16,8 @@ repository.workspace = true
 pyo3 = { workspace = true }
 numpy = { workspace = true }
 
+[dev-dependencies]
+rstest = { workspace = true}
+
 [lints]
 workspace = true

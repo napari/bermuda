@@ -5,6 +5,7 @@ use std::hash::{Hash, Hasher};
 
 pub(crate) type Coord = f32;
 pub(crate) type Index = usize;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
     pub x: Coord,
@@ -12,7 +13,7 @@ pub struct Point {
 }
 
 impl Point {
-    pub fn new(x: Coord, y: Coord) -> Self {
+    pub const fn new(x: Coord, y: Coord) -> Self {
         Self { x, y }
     }
     pub fn new_i(x: i32, y: i32) -> Self {
@@ -304,6 +305,15 @@ pub struct Triangle {
 impl Triangle {
     pub fn new(x: Index, y: Index, z: Index) -> Self {
         Triangle { x, y, z }
+    }
+
+    /// return copy of Triangle with indexes shifted by a given value.
+    pub fn shifted_by(&self, shift: Index) -> Self {
+        Triangle {
+            x: self.x + shift,
+            y: self.y + shift,
+            z: self.z + shift,
+        }
     }
 }
 
