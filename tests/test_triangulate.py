@@ -1,6 +1,11 @@
 import numpy as np
 import pytest
-from bermuda import triangulate_path_edge, triangulate_polygons_with_edge
+from bermuda import (
+    triangulate_path_edge,
+    triangulate_polygons_face,
+    triangulate_polygons_face_3d,
+    triangulate_polygons_with_edge,
+)
 
 
 @pytest.mark.parametrize(
@@ -251,6 +256,29 @@ def _renumerate_triangles(polygon, points, triangles):
 def test_triangulate_polygons_with_edge_non_convex(polygon, expected):
     (triangles, points), _edges = triangulate_polygons_with_edge([polygon])
     triangles_ = _renumerate_triangles(polygon, points, triangles)
+    assert triangles_ == expected
+
+
+@pytest.mark.parametrize(('polygon', 'expected'), TEST_POLYGONS)
+def test_triangulate_polygons_face_with_edge_non_convex(polygon, expected):
+    (triangles, points) = triangulate_polygons_face([polygon])
+    triangles_ = _renumerate_triangles(polygon, points, triangles)
+    assert triangles_ == expected
+
+
+@pytest.mark.parametrize('axis', [0, 1, 2])
+@pytest.mark.parametrize(('polygon', 'expected'), TEST_POLYGONS)
+def test_triangulate_polygons_face_with_edge_non_convex_3d(
+    polygon, expected, axis
+):
+    axes = [0, 1, 2]
+    axes.remove(axis)
+    polygon_3d = np.zeros((len(polygon), 3), dtype=np.float32)
+    polygon_3d[:, axes] = polygon
+    polygon_3d[:, axis] = 5
+
+    (triangles, points) = triangulate_polygons_face_3d([polygon_3d])
+    triangles_ = _renumerate_triangles(polygon, points[:, axes], triangles)
     assert triangles_ == expected
 
 
