@@ -796,6 +796,14 @@ where
     true
 }
 
+pub fn triangulate_convex_polygon(points: &[Point]) -> Vec<Triangle> {
+    let mut triangles = Vec::new();
+    for i in 1..points.len() - 1 {
+        triangles.push(Triangle::new(0, i as Index, (i + 1) as Index));
+    }
+    triangles
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
