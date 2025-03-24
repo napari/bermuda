@@ -1,5 +1,5 @@
 use crate::monotone_polygon::{triangulate_monotone_polygon, MonotonePolygon};
-use crate::point::{orientation, Index, Orientation, Point, Segment, Triangle};
+use crate::point::{centroid, orientation, Index, Orientation, Point, Segment, Triangle};
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap};
@@ -694,6 +694,108 @@ pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> (Vec<Triangle>, Vec<P
     )
 }
 
+/// Check if a polygon is convex.
+///
+/// This function determines if a given polygon is convex by examining its vertices.
+/// A polygon is convex if all its interior angles are less than or equal to 180 degrees
+/// and all vertices have the same orientation.
+///
+/// # Arguments
+/// * `points` - A slice containing the polygon vertices in order
+///
+/// # Returns
+/// `true` if the polygon is convex, `false` otherwise
+pub fn is_convex(points: &[Point]) -> bool {
+    if points.len() < 3 {
+        return false;
+    }
+    if points.len() == 3 {
+        return true;
+    }
+
+    let mut orientation_ = Orientation::Collinear;
+    let mut triangle_orientation;
+    let mut idx = 0;
+
+    // Find first non-collinear orientation
+    for i in 0..points.len() - 2 {
+        triangle_orientation = orientation(points[i], points[i + 1], points[i + 2]);
+        if triangle_orientation != Orientation::Collinear {
+            orientation_ = triangle_orientation;
+            idx = i;
+            break;
+        }
+    }
+
+    // If all points are collinear, it's not a convex polygon
+    if orientation_ == Orientation::Collinear {
+        return false;
+    }
+
+    // Check remaining vertices
+    for i in idx..points.len() - 2 {
+        triangle_orientation = orientation(points[i], points[i + 1], points[i + 2]);
+        if triangle_orientation != Orientation::Collinear && triangle_orientation != orientation_ {
+            return false;
+        }
+    }
+
+    // Check wrapping vertices
+    triangle_orientation = orientation(
+        points[points.len() - 2],
+        points[points.len() - 1],
+        points[0],
+    );
+    if triangle_orientation != Orientation::Collinear && triangle_orientation != orientation_ {
+        return false;
+    }
+
+    triangle_orientation = orientation(points[points.len() - 1], points[0], points[1]);
+    if triangle_orientation != Orientation::Collinear && triangle_orientation != orientation_ {
+        return false;
+    }
+
+    // Calculate centroid
+    let centroid = centroid(points);
+
+    // Check if polygon is simple (no self-intersections)
+    if orientation_ == Orientation::CounterClockwise {
+        is_simple_polygon(points.iter(), centroid)
+    } else {
+        is_simple_polygon(points.iter().rev(), centroid)
+    }
+}
+
+/// Check if the polygon with all angles having the same orientation does not have self-intersections
+///
+/// # Arguments
+/// * `begin` - Iterator to the first point of the polygon
+/// * `end` - Iterator to the end of the polygon
+/// * `centroid` - Centroid of the polygon
+///
+/// # Returns
+/// `true` if the polygon is simple, `false` otherwise
+fn is_simple_polygon<'a, I>(mut iter: I, centroid: Point) -> bool
+where
+    I: Iterator<Item = &'a Point>,
+{
+    let first = iter.next().unwrap();
+    let start_angle = f32::atan2(first.y - centroid.y, first.x - centroid.x);
+    let mut prev_angle = 0.0;
+
+    for point in iter {
+        let mut angle = f32::atan2(point.y - centroid.y, point.x - centroid.x) - start_angle;
+        if angle < 0.0 {
+            angle += 2.0 * std::f32::consts::PI;
+        }
+        if angle < prev_angle {
+            return false;
+        }
+        prev_angle = angle;
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -796,5 +898,91 @@ mod tests {
         ];
         segments.sort_by(left_right_share_top);
         assert_eq!(segments, expected_segments);
+    }
+
+    fn rotation_matrix(angle: f32) -> [[f32; 2]; 2] {
+        let angle = angle.to_radians();
+        let (sin, cos) = angle.sin_cos();
+        [[cos, -sin], [sin, cos]]
+    }
+
+    fn generate_polygon_by_angle(
+        n: i32,
+        reversed: bool,
+        rotation_angle: f32,
+        angle: f32,
+    ) -> Vec<Point> {
+        let rotation = rotation_matrix(rotation_angle);
+        let mut points = Vec::new();
+        let mut current_angle: f32 = 0.0;
+        for _ in 0..n {
+            let (sin, cos) = current_angle.to_radians().sin_cos();
+            let point = Point::new(cos, sin);
+            points.push(point);
+            current_angle += angle;
+        }
+        if reversed {
+            points.reverse();
+        }
+        points
+            .iter()
+            .map(|p| {
+                Point::new(
+                    rotation[0][0] * p.x + rotation[0][1] * p.y,
+                    rotation[1][0] * p.x + rotation[1][1] * p.y,
+                )
+            })
+            .collect()
+    }
+
+    fn generate_regular_polygon(n: i32, reversed: bool, rotation_angle: f32) -> Vec<Point> {
+        let angle = 360.0 / n as f32;
+        generate_polygon_by_angle(n, reversed, rotation_angle, angle)
+    }
+
+    fn generate_self_intersecting_polygon(
+        n: i32,
+        reversed: bool,
+        rotation_angle: f32,
+    ) -> Vec<Point> {
+        let angle = 2.0 * 360.0 / n as f32;
+        generate_polygon_by_angle(n, reversed, rotation_angle, angle)
+    }
+
+    #[rstest]
+    #[case(3, true, 0.0)]
+    #[case(5, true, 0.0)]
+    #[case(5, false, 0.0)]
+    #[case(5, true, 5.0)]
+    #[case(5, false, 5.0)]
+    #[case(10, true, 75.0)]
+    #[case(10, false, 75.0)]
+    #[case(20, true, 345.0)]
+    #[case(20, false, 345.0)]
+    fn test_is_convex_regular_polygon(
+        #[case] n: i32,
+        #[case] reversed: bool,
+        #[case] rotation: f32,
+    ) {
+        let points = generate_regular_polygon(n, reversed, rotation);
+        assert!(is_convex(&points));
+    }
+
+    #[rstest]
+    #[case(5, true, 0.0)]
+    #[case(5, false, 0.0)]
+    #[case(5, true, 5.0)]
+    #[case(5, false, 5.0)]
+    #[case(11, true, 75.0)]
+    #[case(11, false, 75.0)]
+    #[case(21, true, 345.0)]
+    #[case(21, false, 345.0)]
+    fn test_is_convex_self_intersection(
+        #[case] n: i32,
+        #[case] reversed: bool,
+        #[case] rotation: f32,
+    ) {
+        let points = generate_self_intersecting_polygon(n, reversed, rotation);
+        assert!(!is_convex(&points));
     }
 }
