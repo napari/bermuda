@@ -154,7 +154,7 @@ fn numpy_polygons_to_rust_polygons(polygons: Vec<PyReadonlyArray2<'_, f32>>) -> 
 fn numpy_polygons_to_rust_polygons_3d(
     polygons: Vec<PyReadonlyArray2<'_, f32>>,
 ) -> (Vec<Vec<Point>>, usize, f32) {
-    let mut same_coordinates = [true; 3];
+    let mut is_collinearity_axis = [true; 3];
     let first_coordinates = [
         polygons[0].as_array().row(0)[0],
         polygons[0].as_array().row(0)[1],
@@ -164,13 +164,13 @@ fn numpy_polygons_to_rust_polygons_3d(
     for polygon in &polygons {
         let polygon_ = polygon.as_array();
         for point in polygon_.rows() {
-            same_coordinates[0] = same_coordinates[0] && point[0] == first_coordinates[0];
-            same_coordinates[1] = same_coordinates[1] && point[1] == first_coordinates[1];
-            same_coordinates[2] = same_coordinates[2] && point[2] == first_coordinates[2];
+            is_collinearity_axis[0] = is_collinearity_axis[0] && point[0] == first_coordinates[0];
+            is_collinearity_axis[1] = is_collinearity_axis[1] && point[1] == first_coordinates[1];
+            is_collinearity_axis[2] = is_collinearity_axis[2] && point[2] == first_coordinates[2];
         }
     }
 
-    let count_false = same_coordinates.iter().filter(|&&x| !x).count();
+    let count_false = is_collinearity_axis.iter().filter(|&&x| !x).count();
 
     if count_false != 2 {
         // Either points are collinear against one of the axis or there
@@ -178,14 +178,14 @@ fn numpy_polygons_to_rust_polygons_3d(
         return (Vec::new(), 0, 0.0);
     }
 
-    let false_positions: Vec<usize> = same_coordinates
+    let false_positions: Vec<usize> = is_collinearity_axis
         .iter()
         .enumerate()
         .filter(|(_, &value)| !value)
         .map(|(index, _)| index)
         .collect();
 
-    let drop_axis = same_coordinates.iter().position(|&x| x).unwrap();
+    let drop_axis = is_collinearity_axis.iter().position(|&x| x).unwrap();
     let drop_value = first_coordinates[drop_axis];
 
     // Now false_positions contains [0, 2]
@@ -333,9 +333,15 @@ fn triangulate_polygons_face_3d(
 ) -> PyFaceTriangulation {
     // Convert the numpy array into a rust compatible representation which is a vector of points.
     let (polygons_, drop_axis, drop_value) = numpy_polygons_to_rust_polygons_3d(polygons);
-
-    let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
-    let (face_triangles, face_points) = sweeping_line_triangulation(segments);
+    let (face_triangles, face_points) = if polygons_.len() == 1 && is_convex(&polygons_[0]) {
+        (
+            triangulate_convex_polygon(&polygons_[0]),
+            polygons_[0].clone(),
+        )
+    } else {
+        let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
+        sweeping_line_triangulation(segments)
+    };
 
     let triangles = triangles_to_numpy_array(py, &face_triangles);
 
