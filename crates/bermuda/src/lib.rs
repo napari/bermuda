@@ -4,9 +4,9 @@ use pyo3::prelude::*;
 
 use triangulation::point::Triangle;
 use triangulation::{
-    split_polygons_on_repeated_edges, sweeping_line_triangulation,
-    triangulate_path_edge as triangulate_path_edge_rust, triangulate_paths_edge, PathTriangulation,
-    Point,
+    is_convex, split_polygons_on_repeated_edges, sweeping_line_triangulation,
+    triangulate_convex_polygon, triangulate_path_edge as triangulate_path_edge_rust,
+    triangulate_paths_edge, PathTriangulation, Point,
 };
 
 type EdgeTriangulation = (Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>);
@@ -194,6 +194,16 @@ fn triangulate_polygons_with_edge(
 ) -> PyPolygonTriangulation {
     // Convert the numpy array into a rust compatible representation which is a vector of points.
     let polygons_ = numpy_polygons_to_rust_polygons(polygons);
+    if polygons_.len() == 1 && is_convex(&polygons_[0]) {
+        // if there is only one polygon on list and it is convex
+        // we could use fan triangulation instead of sweeping line
+        let face_triangles = triangulate_convex_polygon(&polygons_[0]);
+        let path_triangulation = triangulate_paths_edge(&polygons_, true, 3.0, false);
+        return Ok((
+            face_triangulation_to_numpy_arrays(py, &face_triangles, &polygons_[0])?,
+            path_triangulation_to_numpy_arrays(py, &path_triangulation)?,
+        ));
+    }
 
     let (new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
     let (face_triangles, face_points) = sweeping_line_triangulation(segments);
@@ -238,6 +248,13 @@ fn triangulate_polygons_face(
 ) -> PyFaceTriangulation {
     // Convert the numpy array into a rust compatible representation which is a vector of points.
     let polygons_ = numpy_polygons_to_rust_polygons(polygons);
+
+    if polygons_.len() == 1 && is_convex(&polygons_[0]) {
+        // if there is only one polygon on list and it is convex
+        // we could use fan triangulation instead of sweeping line
+        let face_triangulation = triangulate_convex_polygon(&polygons_[0]);
+        return face_triangulation_to_numpy_arrays(py, &face_triangulation, &polygons_[0]);
+    }
 
     let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
     let (face_triangles, face_points) = sweeping_line_triangulation(segments);
