@@ -195,6 +195,8 @@ fn triangulate_polygons_with_edge(
     // Convert the numpy array into a rust compatible representation which is a vector of points.
     let polygons_ = numpy_polygons_to_rust_polygons(polygons);
     if polygons_.len() == 1 && is_convex(&polygons_[0]) {
+        // if there is only one polygon on list and it is convex
+        // we could use fan triangulation instead of sweeping line
         let face_triangles = triangulate_convex_polygon(&polygons_[0]);
         let path_triangulation = triangulate_paths_edge(&polygons_, true, 3.0, false);
         return Ok((
@@ -248,6 +250,8 @@ fn triangulate_polygons_face(
     let polygons_ = numpy_polygons_to_rust_polygons(polygons);
 
     if polygons_.len() == 1 && is_convex(&polygons_[0]) {
+        // if there is only one polygon on list and it is convex
+        // we could use fan triangulation instead of sweeping line
         let face_triangulation = triangulate_convex_polygon(&polygons_[0]);
         return face_triangulation_to_numpy_arrays(py, &face_triangulation, &polygons_[0]);
     }

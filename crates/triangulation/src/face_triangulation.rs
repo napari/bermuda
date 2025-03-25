@@ -697,8 +697,12 @@ pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> (Vec<Triangle>, Vec<P
 /// Check if a polygon is convex.
 ///
 /// This function determines if a given polygon is convex by examining its vertices.
-/// A polygon is convex if all its interior angles are less than or equal to 180 degrees
-/// and all vertices have the same orientation.
+/// A polygon is convex if all its interior angles are less than or equal to 180 degrees.
+/// This is determined by checking the orientations of consecutive vertex triplets.
+///
+/// The polygon is considered non-convex if:
+/// - At least one vertex has clockwise orientation while another has counterclockwise orientation
+/// - All vertices are collinear
 ///
 /// # Arguments
 /// * `points` - A slice containing the polygon vertices in order
@@ -781,6 +785,8 @@ where
 {
     let first = iter.next().unwrap();
     let start_angle = f32::atan2(first.y - centroid.y, first.x - centroid.x);
+    // We calculate the angle between starting point, centroid and current point
+    // so we start with 0.0
     let mut prev_angle = 0.0;
 
     for point in iter {
