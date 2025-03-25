@@ -505,7 +505,7 @@ pub fn calc_dedup_edges(polygon_list: &[Vec<Point>]) -> Vec<Segment> {
 
 pub fn centroid(points: &[Point]) -> Point {
     if points.is_empty() {
-        panic!("Cannot calculate centroid of empty points list");
+        panic!("Cannot calculate centroid of an empty points list");
     }
     let sum = points.iter().fold(Point::new(0.0, 0.0), |acc, p| {
         Point::new(acc.x + p.x, acc.y + p.y)

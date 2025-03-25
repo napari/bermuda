@@ -766,7 +766,7 @@ pub fn is_convex(points: &[Point]) -> bool {
     }
 }
 
-/// Check if the polygon with all angles having the same orientation does not have self-intersections
+/// Check for a simple polygon where all angles have the same orientation but do not have self-intersections.
 ///
 /// # Arguments
 /// * `begin` - Iterator to the first point of the polygon
