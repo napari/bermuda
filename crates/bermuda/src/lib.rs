@@ -1,4 +1,5 @@
 #![allow(clippy::useless_conversion)]
+
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
@@ -102,25 +103,30 @@ fn path_triangulation_to_numpy_arrays(
     ))
 }
 
+fn triangles_to_numpy_array(py: Python<'_>, triangles: &[Triangle]) -> Py<PyArray2<u32>> {
+    let triangle_data: Vec<u32> = triangles
+        .iter()
+        .flat_map(|t| [t.x as u32, t.y as u32, t.z as u32])
+        .collect();
+    if !triangles.is_empty() {
+        PyArray::from_vec(py, triangle_data)
+            .reshape([triangles.len(), 3])
+            .unwrap()
+            .into()
+    } else {
+        PyArray2::<u32>::zeros(py, [0, 3], false).into()
+    }
+}
+
 /// Convert internal representation of face triangulation into numpy arrays
 fn face_triangulation_to_numpy_arrays(
     py: Python<'_>,
     triangles: &[Triangle],
     points: &[Point],
 ) -> PyFaceTriangulation {
-    let triangle_data: Vec<u32> = triangles
-        .iter()
-        .flat_map(|t| [t.x as u32, t.y as u32, t.z as u32])
-        .collect();
-
-    let triangle_array = if !triangles.is_empty() {
-        PyArray::from_vec(py, triangle_data).reshape([triangles.len(), 3])?
-    } else {
-        PyArray2::<u32>::zeros(py, [0, 3], false)
-    };
     let flat_points: Vec<f32> = points.iter().flat_map(|p| [p.x, p.y]).collect();
     Ok((
-        triangle_array.into(),
+        triangles_to_numpy_array(py, triangles),
         PyArray::from_vec(py, flat_points)
             .reshape([points.len(), 2])?
             .into(),
@@ -143,6 +149,64 @@ fn numpy_polygons_to_rust_polygons(polygons: Vec<PyReadonlyArray2<'_, f32>>) -> 
         })
         .collect();
     polygons_
+}
+
+fn numpy_polygons_to_rust_polygons_3d(
+    polygons: Vec<PyReadonlyArray2<'_, f32>>,
+) -> (Vec<Vec<Point>>, usize, f32) {
+    let mut is_collinearity_axis = [true; 3];
+    let first_coordinates = [
+        polygons[0].as_array().row(0)[0],
+        polygons[0].as_array().row(0)[1],
+        polygons[0].as_array().row(0)[2],
+    ];
+
+    for polygon in &polygons {
+        let polygon_ = polygon.as_array();
+        for point in polygon_.rows() {
+            is_collinearity_axis[0] = is_collinearity_axis[0] && point[0] == first_coordinates[0];
+            is_collinearity_axis[1] = is_collinearity_axis[1] && point[1] == first_coordinates[1];
+            is_collinearity_axis[2] = is_collinearity_axis[2] && point[2] == first_coordinates[2];
+        }
+    }
+
+    let count_false = is_collinearity_axis.iter().filter(|&&x| !x).count();
+
+    if count_false != 2 {
+        // Either points are collinear against one of the axis or there
+        // is no hyperplane defined by axis that contains all points.
+        return (Vec::new(), 0, 0.0);
+    }
+
+    let false_positions: Vec<usize> = is_collinearity_axis
+        .iter()
+        .enumerate()
+        .filter(|(_, &value)| !value)
+        .map(|(index, _)| index)
+        .collect();
+
+    let drop_axis = is_collinearity_axis.iter().position(|&x| x).unwrap();
+    let drop_value = first_coordinates[drop_axis];
+
+    // Now false_positions contains [0, 2]
+    let pos1 = false_positions[0]; // 0
+    let pos2 = false_positions[1]; // 2
+
+    let polygons_: Vec<Vec<Point>> = polygons
+        .into_iter()
+        .map(|polygon| {
+            polygon
+                .as_array()
+                .rows()
+                .into_iter()
+                .map(|row| Point {
+                    x: row[pos1],
+                    y: row[pos2],
+                })
+                .collect()
+        })
+        .collect();
+    (polygons_, drop_axis, drop_value)
 }
 
 /// Triangulates multiple polygons and generates both face and edge triangulations
@@ -261,10 +325,56 @@ fn triangulate_polygons_face(
     face_triangulation_to_numpy_arrays(py, &face_triangles, &face_points)
 }
 
+#[pyfunction]
+#[pyo3(signature = (polygons))]
+fn triangulate_polygons_face_3d(
+    py: Python<'_>,
+    polygons: Vec<PyReadonlyArray2<'_, f32>>,
+) -> PyFaceTriangulation {
+    // Convert the numpy array into a rust compatible representation which is a vector of points.
+    let (polygons_, drop_axis, drop_value) = numpy_polygons_to_rust_polygons_3d(polygons);
+    let (face_triangles, face_points) = if polygons_.len() == 1 && is_convex(&polygons_[0]) {
+        (
+            triangulate_convex_polygon(&polygons_[0]),
+            polygons_[0].clone(),
+        )
+    } else {
+        let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
+        sweeping_line_triangulation(segments)
+    };
+
+    let triangles = triangles_to_numpy_array(py, &face_triangles);
+
+    let flat_points: Vec<f32> = if drop_axis == 0 {
+        face_points
+            .iter()
+            .flat_map(|p| [drop_value, p.x, p.y])
+            .collect()
+    } else if drop_axis == 1 {
+        face_points
+            .iter()
+            .flat_map(|p| [p.x, drop_value, p.y])
+            .collect()
+    } else {
+        face_points
+            .iter()
+            .flat_map(|p| [p.x, p.y, drop_value])
+            .collect()
+    };
+
+    Ok((
+        triangles,
+        PyArray::from_vec(py, flat_points)
+            .reshape([face_points.len(), 3])?
+            .into(),
+    ))
+}
+
 #[pymodule]
 fn _bermuda(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(triangulate_path_edge, m)?)?;
     m.add_function(wrap_pyfunction!(triangulate_polygons_with_edge, m)?)?;
     m.add_function(wrap_pyfunction!(triangulate_polygons_face, m)?)?;
+    m.add_function(wrap_pyfunction!(triangulate_polygons_face_3d, m)?)?;
     Ok(())
 }
