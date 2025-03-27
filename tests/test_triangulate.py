@@ -477,3 +477,43 @@ def test_triangulate_polygon_segfault5():
         dtype=np.float32,
     )
     triangulate_polygons_with_edge([polygon])
+
+
+def test_triangulate_segment():
+    polygon = np.array([[0, 0], [10, 10]], dtype=np.float32)
+    (
+        (face_triangles, face_vertices),
+        (edge_centers, edge_offsets, edge_triangles),
+    ) = triangulate_polygons_with_edge([polygon])
+    assert len(edge_centers) == 8
+    assert len(edge_offsets) == 8
+    assert len(edge_triangles) == 6
+    assert len(face_vertices) == 2
+    assert len(face_triangles) == 1
+
+
+def test_face_triangulate_segment():
+    polygon = np.array([[0, 0], [10, 10]], dtype=np.float32)
+    (face_triangles, face_vertices) = triangulate_polygons_face([polygon])
+    assert len(face_vertices) == 2
+    assert len(face_triangles) == 1
+
+
+def test_edge_triangulate_segment():
+    polygon = np.array([[0, 0], [10, 10]], dtype=np.float32)
+    (edge_centers, edge_offsets, edge_triangles) = triangulate_path_edge(
+        polygon, closed=False
+    )
+    assert len(edge_centers) == 4
+    assert len(edge_offsets) == 4
+    assert len(edge_triangles) == 2
+
+
+def test_edge_triangulate_segment_closed():
+    polygon = np.array([[0, 0], [10, 10]], dtype=np.float32)
+    (edge_centers, edge_offsets, edge_triangles) = triangulate_path_edge(
+        polygon, closed=True
+    )
+    assert len(edge_centers) == 8
+    assert len(edge_offsets) == 8
+    assert len(edge_triangles) == 6

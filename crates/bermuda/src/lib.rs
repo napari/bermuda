@@ -3,11 +3,10 @@
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
-use triangulation::point::Triangle;
 use triangulation::{
     is_convex, split_polygons_on_repeated_edges, sweeping_line_triangulation,
     triangulate_convex_polygon, triangulate_path_edge as triangulate_path_edge_rust,
-    triangulate_paths_edge, PathTriangulation, Point,
+    triangulate_paths_edge, PathTriangulation, Point, Triangle,
 };
 
 type EdgeTriangulation = (Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>);
@@ -209,6 +208,19 @@ fn numpy_polygons_to_rust_polygons_3d(
     (polygons_, drop_axis, drop_value)
 }
 
+fn face_triangulate_single_polygon(polygon: &[Point]) -> Option<Vec<Triangle>> {
+    if polygon.len() < 3 {
+        return Some(vec![Triangle::new(0, 0, 0)]);
+    }
+    if polygon.len() == 3 {
+        return Some(vec![Triangle::new(0, 1, 2)]);
+    }
+    if is_convex(polygon) {
+        return Some(triangulate_convex_polygon(polygon));
+    }
+    None
+}
+
 /// Triangulates multiple polygons and generates both face and edge triangulations
 ///
 /// This function performs two types of triangulation:
@@ -258,15 +270,14 @@ fn triangulate_polygons_with_edge(
 ) -> PyPolygonTriangulation {
     // Convert the numpy array into a rust compatible representation which is a vector of points.
     let polygons_ = numpy_polygons_to_rust_polygons(polygons);
-    if polygons_.len() == 1 && is_convex(&polygons_[0]) {
-        // if there is only one polygon on list and it is convex
-        // we could use fan triangulation instead of sweeping line
-        let face_triangles = triangulate_convex_polygon(&polygons_[0]);
-        let path_triangulation = triangulate_paths_edge(&polygons_, true, 3.0, false);
-        return Ok((
-            face_triangulation_to_numpy_arrays(py, &face_triangles, &polygons_[0])?,
-            path_triangulation_to_numpy_arrays(py, &path_triangulation)?,
-        ));
+    if polygons_.len() == 1 {
+        if let Some(result) = face_triangulate_single_polygon(&polygons_[0]) {
+            let path_triangulation = triangulate_paths_edge(&polygons_, true, 3.0, false);
+            return Ok((
+                face_triangulation_to_numpy_arrays(py, &result, &polygons_[0])?,
+                path_triangulation_to_numpy_arrays(py, &path_triangulation)?,
+            ));
+        }
     }
 
     let (new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
@@ -313,11 +324,10 @@ fn triangulate_polygons_face(
     // Convert the numpy array into a rust compatible representation which is a vector of points.
     let polygons_ = numpy_polygons_to_rust_polygons(polygons);
 
-    if polygons_.len() == 1 && is_convex(&polygons_[0]) {
-        // if there is only one polygon on list and it is convex
-        // we could use fan triangulation instead of sweeping line
-        let face_triangulation = triangulate_convex_polygon(&polygons_[0]);
-        return face_triangulation_to_numpy_arrays(py, &face_triangulation, &polygons_[0]);
+    if polygons_.len() == 1 {
+        if let Some(result) = face_triangulate_single_polygon(&polygons_[0]) {
+            return face_triangulation_to_numpy_arrays(py, &result, &polygons_[0]);
+        }
     }
 
     let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
@@ -333,14 +343,14 @@ fn triangulate_polygons_face_3d(
 ) -> PyFaceTriangulation {
     // Convert the numpy array into a rust compatible representation which is a vector of points.
     let (polygons_, drop_axis, drop_value) = numpy_polygons_to_rust_polygons_3d(polygons);
-    let (face_triangles, face_points) = if polygons_.len() == 1 && is_convex(&polygons_[0]) {
-        (
-            triangulate_convex_polygon(&polygons_[0]),
-            polygons_[0].clone(),
-        )
+    let (face_triangles, face_points) = if polygons_.len() == 1 {
+        if let Some(result) = face_triangulate_single_polygon(&polygons_[0]) {
+            (result, polygons_[0].clone())
+        } else {
+            sweeping_line_triangulation(split_polygons_on_repeated_edges(&polygons_).1)
+        }
     } else {
-        let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
-        sweeping_line_triangulation(segments)
+        sweeping_line_triangulation(split_polygons_on_repeated_edges(&polygons_).1)
     };
 
     let triangles = triangles_to_numpy_array(py, &face_triangles);
