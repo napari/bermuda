@@ -690,8 +690,8 @@ pub fn split_polygons_on_repeated_edges(
 
             if !current_polygon.is_empty() {
                 // Close the polygon if needed
-                if current_polygon[0] != *current_polygon.last().unwrap() {
-                    current_polygon.push(current_polygon[0]);
+                if current_polygon[0] == *current_polygon.last().unwrap() {
+                    current_polygon.pop();
                 }
                 sub_polygons.push(current_polygon);
                 sub_index += 1;
