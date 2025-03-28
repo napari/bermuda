@@ -354,3 +354,20 @@ fn test_split_polygon_on_repeated_edges_merge_two_polygons() {
     assert_eq!(polygons.len(), 1);
     assert_eq!(edges.len(), 8);
 }
+
+#[rstest]
+fn test_split_polygons_on_repeated_edges() {
+    let polygon = vec![
+        Point::new(10.97627008, 14.30378733),
+        Point::new(12.05526752, 10.89766366),
+        Point::new(8.47309599, 12.91788226),
+        Point::new(8.75174423, 17.83546002),
+        Point::new(19.27325521, 7.66883038),
+        Point::new(15.83450076, 10.5778984),
+    ];
+
+    let (sub_polygons, edges) =
+        intersection::split_polygons_on_repeated_edges(&vec![polygon.clone()]);
+    assert_eq!(sub_polygons.len(), 1);
+    assert_eq!(sub_polygons[0].len(), 6);
+}
