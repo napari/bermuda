@@ -421,7 +421,9 @@ pub fn calc_edges(polygon_list: &[Vec<point::Point>]) -> Vec<point::Segment> {
     for polygon in polygon_list {
         // Create edges between consecutive points
         for window in polygon.windows(2) {
-            edges.push(point::Segment::new(window[0], window[1]));
+            if window[0] != window[1] {
+                edges.push(point::Segment::new(window[0], window[1]));
+            }
         }
 
         // Create edge between last and first point if they're different
