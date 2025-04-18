@@ -362,6 +362,19 @@ fn convert_rust_polygons_to_py_arrays(
     Ok(py_arrays)
 }
 
+/// Splits polygons that have repeated edges into separate polygons
+///
+/// Parameters
+/// ----------
+/// polygons : List[numpy.ndarray]
+///     List of Nx2 arrays where each array contains the vertices of a polygon
+///     as (x, y) coordinates.
+///
+/// Returns
+/// -------
+/// List[numpy.ndarray]
+///     A list of Mx2 arrays where each array represents a polygon after splitting
+///     at repeated edges. Consecutive duplicate points are automatically removed.
 #[pyfunction]
 #[pyo3(signature = (polygons))]
 fn split_polygons_on_repeated_edges(
