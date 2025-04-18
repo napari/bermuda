@@ -38,3 +38,6 @@ def triangulate_polygons_face_3d(
     npt.NDArray[tuple[int, Literal[3]], np.uint32],
     npt.NDArray[tuple[int, Literal[3]], np.float32],
 ]: ...
+def split_polygons_on_repeated_edges(
+    polygons: list[npt.NDArray[tuple[int, Literal[2]], np.float32]],
+) -> list[npt.NDArray[tuple[int, Literal[2]], np.float32]]: ...

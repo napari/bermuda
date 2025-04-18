@@ -4,9 +4,10 @@ use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2};
 use pyo3::prelude::*;
 
 use triangulation::{
-    is_convex, split_polygons_on_repeated_edges, sweeping_line_triangulation,
-    triangulate_convex_polygon, triangulate_path_edge as triangulate_path_edge_rust,
-    triangulate_paths_edge, PathTriangulation, Point, Triangle,
+    is_convex, split_polygons_on_repeated_edges as split_polygons_on_repeated_edges_rust,
+    sweeping_line_triangulation, triangulate_convex_polygon,
+    triangulate_path_edge as triangulate_path_edge_rust, triangulate_paths_edge, PathTriangulation,
+    Point, Triangle,
 };
 
 type EdgeTriangulation = (Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<u32>>);
@@ -136,7 +137,7 @@ fn numpy_polygons_to_rust_polygons(polygons: Vec<PyReadonlyArray2<'_, f32>>) -> 
     let polygons_: Vec<Vec<Point>> = polygons
         .into_iter()
         .map(|polygon| {
-            polygon
+            let mut points: Vec<Point> = polygon
                 .as_array()
                 .rows()
                 .into_iter()
@@ -144,7 +145,9 @@ fn numpy_polygons_to_rust_polygons(polygons: Vec<PyReadonlyArray2<'_, f32>>) -> 
                     x: row[0],
                     y: row[1],
                 })
-                .collect()
+                .collect();
+            points.dedup();
+            points
         })
         .collect();
     polygons_
@@ -280,7 +283,7 @@ fn triangulate_polygons_with_edge(
         }
     }
 
-    let (new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
+    let (new_polygons, segments) = split_polygons_on_repeated_edges_rust(&polygons_);
     let (face_triangles, face_points) = sweeping_line_triangulation(segments);
     let path_triangulation = triangulate_paths_edge(&new_polygons, true, 3.0, false);
     Ok((
@@ -330,9 +333,57 @@ fn triangulate_polygons_face(
         }
     }
 
-    let (_new_polygons, segments) = split_polygons_on_repeated_edges(&polygons_);
+    let (_new_polygons, segments) = split_polygons_on_repeated_edges_rust(&polygons_);
     let (face_triangles, face_points) = sweeping_line_triangulation(segments);
     face_triangulation_to_numpy_arrays(py, &face_triangles, &face_points)
+}
+
+fn convert_rust_polygons_to_py_arrays(
+    py: Python<'_>,
+    polygons: Vec<Vec<Point>>,
+) -> PyResult<Vec<Py<PyArray2<f32>>>> {
+    let mut py_arrays = Vec::with_capacity(polygons.len());
+
+    for polygon in polygons {
+        let num_points = polygon.len();
+        let flat_points: Vec<f32> = polygon.iter().flat_map(|p| [p.x, p.y]).collect();
+
+        // Create a PyArray from the flat vector
+        let array = PyArray::from_vec(py, flat_points);
+
+        // Reshape the array to [num_points, 2]
+        // The reshape operation returns a PyResult, so we use '?' to propagate errors
+        let reshaped_array = array.reshape([num_points, 2])?;
+
+        // Convert the borrowed array (&PyArray2) to an owned one (Py<PyArray2>)
+        py_arrays.push(reshaped_array.into());
+    }
+
+    Ok(py_arrays)
+}
+
+/// Splits polygons that have repeated edges into separate polygons
+///
+/// Parameters
+/// ----------
+/// polygons : List[numpy.ndarray]
+///     List of Nx2 arrays where each array contains the vertices of a polygon
+///     as (x, y) coordinates.
+///
+/// Returns
+/// -------
+/// List[numpy.ndarray]
+///     A list of Mx2 arrays where each array represents a polygon after splitting
+///     at repeated edges. Consecutive duplicate points are automatically removed.
+#[pyfunction]
+#[pyo3(signature = (polygons))]
+fn split_polygons_on_repeated_edges(
+    py: Python<'_>,
+    polygons: Vec<PyReadonlyArray2<'_, f32>>,
+) -> PyResult<Vec<Py<PyArray2<f32>>>> {
+    let polygons_ = numpy_polygons_to_rust_polygons(polygons);
+    let (new_polygons, _segments) = split_polygons_on_repeated_edges_rust(&polygons_);
+    convert_rust_polygons_to_py_arrays(py, new_polygons)
 }
 
 #[pyfunction]
@@ -347,10 +398,10 @@ fn triangulate_polygons_face_3d(
         if let Some(result) = face_triangulate_single_polygon(&polygons_[0]) {
             (result, polygons_[0].clone())
         } else {
-            sweeping_line_triangulation(split_polygons_on_repeated_edges(&polygons_).1)
+            sweeping_line_triangulation(split_polygons_on_repeated_edges_rust(&polygons_).1)
         }
     } else {
-        sweeping_line_triangulation(split_polygons_on_repeated_edges(&polygons_).1)
+        sweeping_line_triangulation(split_polygons_on_repeated_edges_rust(&polygons_).1)
     };
 
     let triangles = triangles_to_numpy_array(py, &face_triangles);
@@ -386,5 +437,6 @@ fn _bermuda(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(triangulate_polygons_with_edge, m)?)?;
     m.add_function(wrap_pyfunction!(triangulate_polygons_face, m)?)?;
     m.add_function(wrap_pyfunction!(triangulate_polygons_face_3d, m)?)?;
+    m.add_function(wrap_pyfunction!(split_polygons_on_repeated_edges, m)?)?;
     Ok(())
 }

@@ -414,6 +414,8 @@ impl MonotonePolygonBuilder {
     fn process_split_point(&mut self, p: Point, edge_left: Segment, edge_right: Segment) {
         if let Some(interval) = self.find_interval_with_point(p) {
             let right_segment = interval.borrow().right_segment.clone();
+            self.segment_to_line
+                .remove(&interval.borrow_mut().right_segment);
             interval.borrow_mut().right_segment = edge_left.clone();
             interval.borrow_mut().last_seen = p;
             self.segment_to_line
@@ -685,6 +687,15 @@ pub fn sweeping_line_triangulation(edges: Vec<Segment>) -> (Vec<Triangle>, Vec<P
             }
             PointType::Normal(top, bottom) => {
                 builder.process_normal_point(*p, top, bottom).unwrap();
+            }
+        }
+        #[cfg(debug_assertions)]
+        {
+            for segment in builder.segment_to_line.keys() {
+                let val = builder.segment_to_line.get(segment).unwrap().borrow();
+                if val.left_segment != segment.clone() && val.right_segment != segment.clone() {
+                    panic!("Segment not found in the map");
+                }
             }
         }
     }
