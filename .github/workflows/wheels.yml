@@ -25,6 +25,8 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+      - name: Install clippy
+        run: rustup component add clippy
       - name: cargo version
         run: |
           cargo --version
