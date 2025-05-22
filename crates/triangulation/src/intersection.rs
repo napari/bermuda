@@ -636,7 +636,7 @@ struct GraphNode {
 /// let (polygons, edges) = split_polygons_on_repeated_edges(&vec![polygon1]);
 ///
 /// // The polygons are split at intersection points
-/// assert!(polygons.len() == 2); // More polygons after splitting at intersections
+/// assert_eq!(polygons.len(), 2); // More polygons after splitting at intersections
 /// ```
 #[inline]
 pub fn split_polygons_on_repeated_edges(
@@ -646,6 +646,7 @@ pub fn split_polygons_on_repeated_edges(
     let edges_dedup = point::calc_dedup_edges(&intersected);
     let mut edge_map: HashMap<point::Point, GraphNode> = HashMap::new();
     let mut sub_polygons: Vec<Vec<point::Point>> = Vec::new();
+    let mut visited_edges: HashSet<point::Segment> = HashSet::new();
 
     // Build undirected graph
     for edge in edges_dedup.iter() {
@@ -655,49 +656,32 @@ pub fn split_polygons_on_repeated_edges(
         edge_map.entry(p2).or_default().edges.push(p1);
     }
 
-    let mut sub_index = 0;
-    let points: Vec<point::Point> = edge_map.keys().copied().collect();
+    let points = edge_map.keys().cloned().collect::<Vec<_>>();
 
-    for start_point in points {
-        if !edge_map.get(&start_point).is_none_or(|node| node.visited) {
-            let mut current_polygon = Vec::new();
-            let mut stack = vec![start_point];
-
-            while let Some(current) = stack.pop() {
-                if let Some(node) = edge_map.get(&current) {
-                    if node.visited {
-                        continue;
-                    }
-
-                    // Collect unvisited neighbors first
-                    let next_points: Vec<_> = node
-                        .edges
-                        .iter()
-                        .copied()
-                        .filter(|&next| !edge_map.get(&next).is_none_or(|n| n.visited))
-                        .collect();
-
-                    // Now we can modify the current node
-                    if let Some(node) = edge_map.get_mut(&current) {
-                        node.visited = true;
-                        node.sub_index = sub_index;
-                    }
-
-                    current_polygon.push(current);
-                    stack.extend(next_points);
-                }
-            }
-
-            if !current_polygon.is_empty() {
-                // Close the polygon if needed
-                if current_polygon[0] == *current_polygon.last().unwrap() {
-                    current_polygon.pop();
-                }
-                sub_polygons.push(current_polygon);
-                sub_index += 1;
-            }
+    for point in points.iter() {
+        let mut node = edge_map.get_mut(point).unwrap();
+        if node.visited {
+            continue;
         }
+        node.visited = true;
+        let mut new_polygon = Vec::new();
+        new_polygon.push(*point);
+        while node.sub_index < node.edges.len() {
+            let next_point = node.edges[node.sub_index];
+            node.sub_index += 1;
+            let new_segment = point::Segment::new(*new_polygon.last().unwrap(), next_point);
+            if visited_edges.contains(&new_segment) {
+                continue;
+            }
+            visited_edges.insert(new_segment);
+            node = edge_map.get_mut(&next_point).unwrap();
+            node.visited = true;
+            new_polygon.push(next_point);
+        }
+        while new_polygon.first() == new_polygon.last() {
+            new_polygon.pop();
+        }
+        sub_polygons.push(new_polygon);
     }
-
     (sub_polygons, edges_dedup)
 }
