@@ -678,10 +678,12 @@ pub fn split_polygons_on_repeated_edges(
             node.visited = true;
             new_polygon.push(next_point);
         }
-        while new_polygon.first() == new_polygon.last() {
+        while new_polygon.first() == new_polygon.last() && new_polygon.len() > 1 {
             new_polygon.pop();
         }
-        sub_polygons.push(new_polygon);
+        if new_polygon.len() >= 3 {
+            sub_polygons.push(new_polygon);
+        }
     }
     (sub_polygons, edges_dedup)
 }
