@@ -13,6 +13,9 @@ permissions:
 jobs:
   check-rust-version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
