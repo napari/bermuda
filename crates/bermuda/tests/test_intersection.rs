@@ -366,7 +366,7 @@ fn test_split_polygons_on_repeated_edges() {
         Point::new(15.83450076, 10.5778984),
     ];
 
-    let (sub_polygons, edges) =
+    let (sub_polygons, _edges) =
         intersection::split_polygons_on_repeated_edges(&vec![polygon.clone()]);
     assert_eq!(sub_polygons.len(), 1);
     assert_eq!(sub_polygons[0].len(), 6);
