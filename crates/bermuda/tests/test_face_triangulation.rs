@@ -98,7 +98,10 @@ fn test_triangulate_polygon_non_convex(
 ) {
     let (new_polygons, segments) = split_polygons_on_repeated_edges(&vec![polygon.clone()]);
     assert_eq!(
-        new_polygons[0].iter().cloned().collect::<HashSet<_>>(),
+        new_polygons
+            .iter()
+            .flat_map(|polygon| polygon.iter().cloned())
+            .collect::<HashSet<_>>(),
         polygon.iter().cloned().collect::<HashSet<_>>()
     );
     let (triangles, points) = sweeping_line_triangulation(segments);
