@@ -56,6 +56,7 @@ jobs:
           CURRENT_RUST_VERSION: ${{ steps.pinned.outputs.pinned }}
           LATEST_RUST_VERSION: ${{ steps.stable.outputs.stable }}
           TITLE: "[rust check] outdated rust toolchain"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           filename: .github/OUTDATED_RUST_TEMPLATE.md
           update_existing: true
