@@ -196,14 +196,14 @@ fn get_left_right_edges_bottom(s1: &Segment, s2: &Segment) -> (Segment, Segment)
 ///
 /// # Fields
 /// * `segment_to_line` - Maps segments to their associated intervals in the sweep line.
-///                      Uses interior mutability (`RefCell`) to allow modification during traversal
-///                      and reference counting (`Rc`) for shared ownership.
+///   Uses interior mutability (`RefCell`) to allow modification during traversal
+///   and reference counting (`Rc`) for shared ownership.
 ///
 /// * `point_to_edges` - Maps each vertex to its connected segment endpoints, maintaining the
-///                      topological relationships between points in the polygon.
+///   topological relationships between points in the polygon.
 ///
 /// * `monotone_polygons` - Accumulates the resulting monotone polygons as they are constructed
-///                         during the sweep line process.
+///   during the sweep line process.
 ///
 /// # Algorithm
 /// The builder implements a sweep line algorithm that:
