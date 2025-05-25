@@ -405,7 +405,7 @@ pub fn find_intersections(segments: &[point::Segment]) -> HashSet<OrderedPair> {
 /// # Arguments
 ///
 /// * `polygon_list` - A slice of vectors, with each vector containing `Point` instances
-///                    representing a polygon
+///   representing a polygon
 ///
 /// # Returns
 ///
