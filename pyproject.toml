@@ -163,7 +163,6 @@ combine-as-imports = true
 test-command = "pytest {project}/tests"
 test-groups = ["test"]
 enable = ["pypy"]
-skip = "pp*macos*"
 build = "*64"
 
 [tool.cibuildwheel.linux]
