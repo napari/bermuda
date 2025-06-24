@@ -21,10 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          version: "latest"
+          cache-dependency-glob: "pyproject.toml"
       - name: Install clippy
         run: rustup component add clippy rustfmt
       - name: cargo version
@@ -46,12 +48,14 @@ jobs:
         python_version: ["3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
           version: "latest"
-          python-version: ${{ matrix.python_version }}
       - name: run test
         run: uv run --group test pytest
 
