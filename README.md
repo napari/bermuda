@@ -1,6 +1,12 @@
 # Napari bermuda
 
-*📌 Experimental: under active development. Please do not use it in production.*
+[![License](https://img.shields.io/pypi/l/bermuda.svg)](https://github.com/napari/bermuda/raw/main/LICENSE)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/bermuda.svg)](https://python.org)
+[![Python package index](https://img.shields.io/pypi/v/bermuda.svg)](https://pypi.org/project/napari)
+[![Python package index download statistics](https://img.shields.io/pypi/dm/bermuda.svg)](https://pypistats.org/packages/napari)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/bermuda.svg)](https://anaconda.org/conda-forge/bermuda)
+[![Development Status](https://img.shields.io/pypi/status/napari.svg)](https://en.wikipedia.org/wiki/Software_release_life_cycle#Alpha)
+[![Wheels](https://github.com/napari/bermuda/actions/workflows/wheels.yml/badge.svg)](https://github.com/napari/bermuda/actions/workflows/wheels.yml)
 
 Rust backend for napari contains code to speed up triangulation.
 
