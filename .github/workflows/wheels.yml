@@ -43,17 +43,15 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-        python_version: ["3.9", "3.12"]
+        python_version: ["3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        name: Install Python ${{ matrix.python_version }}
-        with:
-          python-version: ${{ matrix.python_version }}
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: "pyproject.toml"
+          version: "latest"
+          python-version: ${{ matrix.python_version }}
       - name: run test
         run: uv run --group test pytest
 
