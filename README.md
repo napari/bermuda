@@ -1,4 +1,4 @@
-# Napari bermuda
+# napari bermuda
 
 [![License](https://img.shields.io/pypi/l/bermuda.svg)](https://github.com/napari/bermuda/raw/main/LICENSE)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/bermuda.svg)](https://python.org)
