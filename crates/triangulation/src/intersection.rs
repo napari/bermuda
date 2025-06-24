@@ -1,4 +1,5 @@
 use crate::point;
+use crate::point::{orientation, Orientation};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
@@ -584,6 +585,28 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
     new_polygons_list
 }
 
+fn filter_collinear_polygons(
+    polygon_list: &[Vec<point::Point>],
+) -> (Vec<Vec<point::Point>>, Vec<Vec<point::Point>>) {
+    polygon_list.iter().cloned().partition(|polygon| {
+        let n = polygon.len();
+        if n < 3 {
+            return true;
+        }
+
+        // Check if all triplets of vertices, including the ones that wrap around, are collinear.
+        let are_all_collinear = polygon
+            .windows(3)
+            // Check the main body of the polygon
+            .all(|w| orientation(w[0], w[1], w[2]) == Orientation::Collinear)
+            // And also check the two triplets that wrap around the start/end
+            && orientation(polygon[n - 2], polygon[n - 1], polygon[0]) == Orientation::Collinear
+            && orientation(polygon[n - 1], polygon[0], polygon[1]) == Orientation::Collinear;
+
+        are_all_collinear
+    })
+}
+
 #[derive(Default)]
 struct GraphNode {
     edges: Vec<point::Point>,
@@ -642,7 +665,8 @@ struct GraphNode {
 pub fn split_polygons_on_repeated_edges(
     polygon_list: &[Vec<point::Point>],
 ) -> (Vec<Vec<point::Point>>, Vec<point::Segment>) {
-    let intersected = find_intersection_points(polygon_list);
+    let (mut collinear_polygons, normal_polygons) = filter_collinear_polygons(polygon_list);
+    let intersected = find_intersection_points(&normal_polygons);
     let edges_dedup = point::calc_dedup_edges(&intersected);
     let mut edge_map: HashMap<point::Point, GraphNode> = HashMap::new();
     let mut sub_polygons: Vec<Vec<point::Point>> = Vec::new();
@@ -685,5 +709,6 @@ pub fn split_polygons_on_repeated_edges(
             sub_polygons.push(new_polygon);
         }
     }
+    sub_polygons.append(&mut collinear_polygons);
     (sub_polygons, edges_dedup)
 }
