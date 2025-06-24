@@ -197,7 +197,7 @@ fn numpy_polygons_to_rust_polygons_3d(
     let polygons_: Vec<Vec<Point>> = polygons
         .into_iter()
         .map(|polygon| {
-            polygon
+            let mut points: Vec<Point> = polygon
                 .as_array()
                 .rows()
                 .into_iter()
@@ -205,7 +205,9 @@ fn numpy_polygons_to_rust_polygons_3d(
                     x: row[pos1],
                     y: row[pos2],
                 })
-                .collect()
+                .collect();
+            points.dedup();
+            points
         })
         .collect();
     (polygons_, drop_axis, drop_value)
