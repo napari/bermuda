@@ -598,7 +598,7 @@ fn filter_collinear_polygons(
         }
 
         // Check if all triplets of vertices, including the ones that wrap around, are collinear.
-        let are_all_collinear = polygon
+        let are_all_vertices_collinear = polygon
             .windows(3)
             // Check the main body of the polygon
             .all(|w| orientation(w[0], w[1], w[2]) == Orientation::Collinear)
@@ -606,7 +606,7 @@ fn filter_collinear_polygons(
             && orientation(polygon[n - 2], polygon[n - 1], polygon[0]) == Orientation::Collinear
             && orientation(polygon[n - 1], polygon[0], polygon[1]) == Orientation::Collinear;
 
-        are_all_collinear
+        are_all_vertices_collinear
     })
 }
 
@@ -719,7 +719,6 @@ pub fn split_polygons_on_repeated_edges(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::point::calc_dedup_edges;
     use rstest::rstest;
 
     #[rstest]
