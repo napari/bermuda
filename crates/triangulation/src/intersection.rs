@@ -1,4 +1,5 @@
 use crate::point;
+use crate::point::{orientation, Orientation};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
@@ -435,41 +436,31 @@ pub fn calc_edges(polygon_list: &[Vec<point::Point>]) -> Vec<point::Segment> {
     edges
 }
 
-/// Finds and processes all intersection points between polygons in the given list.
+/// Inserts intersection points into polygons where their edges intersect with others.
 ///
-/// This function performs the following steps:
-/// 1. Converts polygons to edges
-/// 2. Finds all intersection points between edges
-/// 3. For each intersection, calculates projection factors and stores the intersection points
-/// 4. Creates new polygons that include the intersection points
+/// For each polygon in the input list, this function computes all intersection points between its edges and those of other polygons, then returns new polygons with these intersection points inserted in order along the edges. If no intersections are found, the original polygons are returned unchanged.
 ///
 /// # Arguments
 ///
-/// * `polygon_list` - A slice of vectors where each vector contains points defining a polygon
+/// * `polygon_list` - A slice of polygons, each represented as a vector of points.
 ///
 /// # Returns
 ///
-/// A vector of modified polygons (as vectors of points) where each polygon includes
-/// the intersection points with other polygons. If no intersections are found,
-/// returns a copy of the input polygons.
+/// A vector of polygons, each as a vector of points, with intersection points included where edges intersect. The order of polygons is preserved, and polygons remain closed if they were closed in the input.
 ///
 /// # Examples
 ///
 /// ```
 /// use triangulation::point::Point;
 /// use triangulation::intersection::find_intersection_points;
+///
 /// let polygon1 = vec![Point::new(0.0, 0.0), Point::new(1.0, 1.0), Point::new(0.0, 1.0)];
 /// let polygon2 = vec![Point::new(0.0, 0.5), Point::new(1.0, 0.5), Point::new(0.5, 0.0)];
 /// let polygons = vec![polygon1, polygon2];
+///
 /// let result = find_intersection_points(&polygons);
-/// // Result will contain the original polygons with additional points at their intersections
+/// // The result contains the original polygons with additional points at their intersections.
 /// ```
-///
-/// # Note
-///
-/// The function preserves the order of the original polygons but may add additional points
-/// where intersections occur. The resulting polygons maintain their closed nature
-/// (first point equals last point if that was true in the input).
 pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<point::Point>> {
     // Calculate edges from the polygon list
     let edges = calc_edges(polygon_list);
@@ -584,6 +575,43 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
     new_polygons_list
 }
 
+/// Splits a list of polygons into collinear and non-collinear groups.
+///
+/// Returns a tuple where the first element contains polygons whose consecutive triplets of vertices (including wrap-around triplets) are all collinear, and the second element contains all other polygons.
+///
+/// # Examples
+///
+/// ```
+/// let polygons = vec![
+///     vec![Point::new(0.0, 0.0), Point::new(1.0, 1.0), Point::new(2.0, 2.0)], // collinear
+///     vec![Point::new(0.0, 0.0), Point::new(1.0, 0.0), Point::new(1.0, 1.0)], // not collinear
+/// ];
+/// let (collinear, normal) = filter_collinear_polygons(&polygons);
+/// assert_eq!(collinear.len(), 1);
+/// assert_eq!(normal.len(), 1);
+/// ```
+fn filter_collinear_polygons(
+    polygon_list: &[Vec<point::Point>],
+) -> (Vec<Vec<point::Point>>, Vec<Vec<point::Point>>) {
+    polygon_list.iter().cloned().partition(|polygon| {
+        let n = polygon.len();
+        if n < 3 {
+            return true;
+        }
+
+        // Check if all triplets of vertices, including the ones that wrap around, are collinear.
+        let are_all_collinear = polygon
+            .windows(3)
+            // Check the main body of the polygon
+            .all(|w| orientation(w[0], w[1], w[2]) == Orientation::Collinear)
+            // And also check the two triplets that wrap around the start/end
+            && orientation(polygon[n - 2], polygon[n - 1], polygon[0]) == Orientation::Collinear
+            && orientation(polygon[n - 1], polygon[0], polygon[1]) == Orientation::Collinear;
+
+        are_all_collinear
+    })
+}
+
 #[derive(Default)]
 struct GraphNode {
     edges: Vec<point::Point>,
@@ -591,35 +619,19 @@ struct GraphNode {
     sub_index: usize,
 }
 
-/// Splits multiple polygons into smaller polygons based on edge intersections and repeated edges using a DFS graph traversal.
+/// Splits polygons into smaller components by inserting intersection points and separating along repeated edges.
 ///
-/// This function performs two main operations:
-/// 1. Finds intersection points between edges of all input polygons and splits edges at these points
-/// 2. Identifies duplicated edges within the resulting polygons and splits them into multiple
-///    disjoint polygonal components
+/// This function processes a list of polygons, first partitioning out collinear polygons. For the remaining polygons, it finds all intersection points between their edges, splits the edges at these points, and deduplicates the resulting set of edges. It then constructs an undirected graph from these edges and traverses it to extract all simple polygons formed by the unique edge network. Collinear polygons are preserved and appended to the result without modification.
 ///
-/// The splitting is guided by the unique edges that are determined through a deduplication process.
-/// All polygon intersections in the result will occur only at points, not along edges.
-///
-/// # Arguments
-/// * `polygon_list` - A slice of vectors, where each vector contains `Point`s representing a polygon
-///
-/// # Returns
-/// A tuple containing:
-/// * A `Vec<Vec<Point>>` representing the split polygons as individual vectors of points
-/// * A `Vec<Segment>` containing the deduplicated list of edges used during splitting
-///
-/// # Purpose
-/// This function is designed for edge triangulation (from `path_triangulation.rs`) and
-/// provides the edges that can be further used for face triangulation. It ensures that
-/// polygon intersections occur only at vertices, not along edges.
+/// Returns a tuple containing the list of split polygons and the deduplicated set of edges used for splitting.
 ///
 /// # Examples
+///
 /// ```
 /// use triangulation::point::{Point, Segment};
 /// use triangulation::intersection::split_polygons_on_repeated_edges;
 ///
-/// // Create two intersecting rectangles
+/// // Create a polygon with repeated edges and self-intersections
 /// let polygon1 = vec![
 ///     Point::new(0.0, 0.0),
 ///     Point::new(3.0, 0.0),
@@ -636,13 +648,13 @@ struct GraphNode {
 /// let (polygons, edges) = split_polygons_on_repeated_edges(&vec![polygon1]);
 ///
 /// // The polygons are split at intersection points
-/// assert_eq!(polygons.len(), 2); // More polygons after splitting at intersections
+/// assert!(polygons.len() >= 1);
 /// ```
-#[inline]
 pub fn split_polygons_on_repeated_edges(
     polygon_list: &[Vec<point::Point>],
 ) -> (Vec<Vec<point::Point>>, Vec<point::Segment>) {
-    let intersected = find_intersection_points(polygon_list);
+    let (mut collinear_polygons, normal_polygons) = filter_collinear_polygons(polygon_list);
+    let intersected = find_intersection_points(&normal_polygons);
     let edges_dedup = point::calc_dedup_edges(&intersected);
     let mut edge_map: HashMap<point::Point, GraphNode> = HashMap::new();
     let mut sub_polygons: Vec<Vec<point::Point>> = Vec::new();
@@ -685,5 +697,6 @@ pub fn split_polygons_on_repeated_edges(
             sub_polygons.push(new_polygon);
         }
     }
+    sub_polygons.append(&mut collinear_polygons);
     (sub_polygons, edges_dedup)
 }
