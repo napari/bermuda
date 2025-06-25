@@ -585,6 +585,9 @@ pub fn find_intersection_points(polygon_list: &[Vec<point::Point>]) -> Vec<Vec<p
     new_polygons_list
 }
 
+/// Splits a list of polygons into collinear and non-collinear groups.
+///
+/// Returns a tuple where the first element contains polygons whose consecutive triplets of vertices (including wrap-around triplets) are all collinear, and the second element contains all other polygons.
 fn filter_collinear_polygons(
     polygon_list: &[Vec<point::Point>],
 ) -> (Vec<Vec<point::Point>>, Vec<Vec<point::Point>>) {
@@ -711,4 +714,30 @@ pub fn split_polygons_on_repeated_edges(
     }
     sub_polygons.append(&mut collinear_polygons);
     (sub_polygons, edges_dedup)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::point::calc_dedup_edges;
+    use rstest::rstest;
+
+    #[rstest]
+    fn test_filter_collinear_polygons() {
+        let polygons = vec![
+            vec![
+                point::Point::new(0.0, 0.0),
+                point::Point::new(1.0, 1.0),
+                point::Point::new(2.0, 2.0),
+            ], // collinear
+            vec![
+                point::Point::new(0.0, 0.0),
+                point::Point::new(1.0, 0.0),
+                point::Point::new(1.0, 1.0),
+            ], // not collinear
+        ];
+        let (collinear, normal) = filter_collinear_polygons(&polygons);
+        assert_eq!(collinear.len(), 1);
+        assert_eq!(normal.len(), 1);
+    }
 }
