@@ -172,7 +172,7 @@ fn numpy_polygons_to_rust_polygons(polygons: Vec<PyReadonlyArray2<'_, f32>>) -> 
 /// let (polygons_2d, dropped_axis, dropped_value) = numpy_polygons_to_rust_polygons_3d(polygons_3d);
 /// assert!(dropped_axis < 3);
 /// ```
-fn numpy_polygons_to_rust_polygons_3d(
+pub fn numpy_polygons_to_rust_polygons_3d(
     polygons: Vec<PyReadonlyArray2<'_, f32>>,
 ) -> (Vec<Vec<Point>>, usize, f32) {
     let mut is_collinearity_axis = [true; 3];
