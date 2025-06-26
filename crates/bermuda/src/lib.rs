@@ -153,6 +153,17 @@ fn numpy_polygons_to_rust_polygons(polygons: Vec<PyReadonlyArray2<'_, f32>>) -> 
     polygons_
 }
 
+/// Projects 3D polygons onto a 2D plane by dropping the axis along which all points are collinear.
+///
+/// Determines which coordinate axis is constant across all points in all polygons, then projects each polygon onto the remaining two axes. Consecutive duplicate points are removed from each projected polygon.
+///
+/// # Returns
+/// A tuple containing:
+/// - The projected 2D polygons as vectors of `Point`.
+/// - The index of the dropped axis (0 for x, 1 for y, 2 for z).
+/// - The constant value along the dropped axis.
+///
+/// If the input polygons are not coplanar (i.e., no axis is constant across all points), returns empty polygons, zero for the dropped axis, and zero for the dropped value.
 fn numpy_polygons_to_rust_polygons_3d(
     polygons: Vec<PyReadonlyArray2<'_, f32>>,
 ) -> (Vec<Vec<Point>>, usize, f32) {
@@ -197,7 +208,7 @@ fn numpy_polygons_to_rust_polygons_3d(
     let polygons_: Vec<Vec<Point>> = polygons
         .into_iter()
         .map(|polygon| {
-            polygon
+            let mut points: Vec<Point> = polygon
                 .as_array()
                 .rows()
                 .into_iter()
@@ -205,7 +216,9 @@ fn numpy_polygons_to_rust_polygons_3d(
                     x: row[pos1],
                     y: row[pos2],
                 })
-                .collect()
+                .collect();
+            points.dedup();
+            points
         })
         .collect();
     (polygons_, drop_axis, drop_value)
