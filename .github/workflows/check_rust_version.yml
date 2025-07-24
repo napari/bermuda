@@ -18,7 +18,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Extract pinned Rust version
         id: pinned
@@ -51,7 +51,7 @@ jobs:
 
       - name: Report outdated rust
         if: steps.pinned.outputs.pinned != steps.stable.outputs.stable
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5 # v2.9.2
         env:
           CURRENT_RUST_VERSION: ${{ steps.pinned.outputs.pinned }}
           LATEST_RUST_VERSION: ${{ steps.stable.outputs.stable }}
