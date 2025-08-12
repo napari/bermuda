@@ -20,7 +20,7 @@ jobs:
     name: Run code checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
@@ -49,7 +49,7 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
         python_version: ["3.9", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
@@ -66,7 +66,7 @@ jobs:
     needs: pre-commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/cache@v4
         with:
           path: |
@@ -89,7 +89,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Build wheels
@@ -105,7 +105,7 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
