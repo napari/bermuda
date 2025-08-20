@@ -161,7 +161,7 @@ combine-as-imports = true
 [tool.cibuildwheel]
 test-command = "pytest {project}/tests"
 test-groups = ["test"]
-enable = ["pypy"]
+enable = ["pypy", "cpython-freethreading"]
 build = "*64"
 
 [tool.cibuildwheel.linux]
@@ -183,7 +183,10 @@ select = "*-macosx*arm64"
 environment = { MACOSX_DEPLOYMENT_TARGET="11.0"}
 
 [[tool.cibuildwheel.overrides]]
-select = "*cp31{2,3,4,5}*macosx*x86_64*"
+select = "*cp31{2,3}*macosx*x86_64*"
 environment = { MACOSX_DEPLOYMENT_TARGET="10.13"}
 
+[[tool.cibuildwheel.overrides]]
+select = "*cp31{4,5,6,7}*macosx*x86_64*"
+environment = { MACOSX_DEPLOYMENT_TARGET="10.15"}
 
