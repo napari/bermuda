@@ -175,6 +175,9 @@ environment = { PATH="$HOME/.cargo/bin:$PATH" }
 [tool.cibuildwheel.macos]
 environment = { MACOSX_DEPLOYMENT_TARGET="10.12"}
 
+[tool.cibuildwheel.windows]
+skip = ["cp39*arm64", "cp310*arm64"]
+
 [[tool.cibuildwheel.overrides]]
 select = "*-macosx*arm64"
 environment = { MACOSX_DEPLOYMENT_TARGET="11.0"}
@@ -183,6 +186,4 @@ environment = { MACOSX_DEPLOYMENT_TARGET="11.0"}
 select = "*cp31{2,3,4,5}*macosx*x86_64*"
 environment = { MACOSX_DEPLOYMENT_TARGET="10.13"}
 
-[[tool.cibuildwheel.overrides]]
-select = "*-win_arm64*"
-skip = ["cp39*", "cp310*"]
+
