@@ -25,9 +25,7 @@ classifiers = [
 dependencies = [
     "numpy>=1.22.2",
 ]
-
-[project.license]
-text = "BSD-3-Clause"
+license = " BSD-3-Clause"
 
 [project.readme]
 file = "README.md"
