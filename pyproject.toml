@@ -182,3 +182,7 @@ environment = { MACOSX_DEPLOYMENT_TARGET="11.0"}
 [[tool.cibuildwheel.overrides]]
 select = "*cp31{2,3,4,5}*macosx*x86_64*"
 environment = { MACOSX_DEPLOYMENT_TARGET="10.13"}
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win_arm64"
+skip = ["cp39*", "cp310*"]
