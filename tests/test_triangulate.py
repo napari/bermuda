@@ -165,21 +165,21 @@ def test_triangulate_path_edge_py(
 
 
 def test_default_values():
-    centers, offsets, triangles = triangulate_path_edge(
+    _centers, _offsets, triangles = triangulate_path_edge(
         np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32')
     )
     assert len(triangles) == 6
 
 
 def test_default_values_closed():
-    centers, offsets, triangles = triangulate_path_edge(
+    _centers, _offsets, triangles = triangulate_path_edge(
         np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'), True
     )
     assert len(triangles) == 8
 
 
 def test_default_values_closed_keyword():
-    centers, offsets, triangles = triangulate_path_edge(
+    _centers, _offsets, triangles = triangulate_path_edge(
         np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'),
         closed=True,
     )
@@ -187,7 +187,7 @@ def test_default_values_closed_keyword():
 
 
 def test_default_values_keyword_order():
-    centers, offsets, triangles = triangulate_path_edge(
+    _centers, _offsets, triangles = triangulate_path_edge(
         np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'),
         bevel=True,
         closed=True,
@@ -196,7 +196,7 @@ def test_default_values_keyword_order():
 
 
 def test_change_limit():
-    centers, offsets, triangles = triangulate_path_edge(
+    _centers, _offsets, triangles = triangulate_path_edge(
         np.array([[0, 0], [0, 10], [10, 10], [10, 0]], dtype='float32'),
         bevel=False,
         closed=True,
