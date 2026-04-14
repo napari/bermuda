@@ -15,6 +15,8 @@ concurrency:
   group: wheel-${{ github.ref }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   pre-commit:
     name: Run code checks
@@ -36,8 +38,8 @@ jobs:
           cargo --version
           cargo clippy --version
 
-      - name: Run pre-commit
-        run: uvx pre-commit run --all-files
+      - name: Run prek
+        run: uvx prek run --all-files
 
   test:
     name: Test on ${{ matrix.os }} with Python ${{ matrix.python_version }}
@@ -56,6 +58,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
           version: "latest"
           python-version: ${{ matrix.python_version }}
+          enable-cache: $${{ github.event_name == 'pull_request' }}
       - name: run test
         run: uv run --group test --no-dev pytest
 
@@ -69,6 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        if: github.event_name == 'pull_request'
         with:
           path: |
             ~/.cargo/bin/
@@ -95,6 +99,8 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1.15.4
+        with:
+          cache: $${{ github.event_name == 'pull_request' }}
       - name: Build wheels
         uses: pypa/cibuildwheel@8d2b08b68458a16aeb24b64e68a09ab1c8e82084 # v3.4.1
 
