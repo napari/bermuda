@@ -7,6 +7,8 @@ on:
     paths:
       - '.github/**'
 
+permissions: {}
+
 jobs:
   actionlint:
     name: Action lint
