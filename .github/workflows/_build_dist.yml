@@ -1,0 +1,51 @@
+name: Build distributions (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      rust_cache:
+        description: "Enable rust toolchain cache"
+        required: true
+        type: boolean
+
+permissions: {}
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest, macos-15-intel]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: 'false'
+      - uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16.0
+        with:
+          cache: ${{ inputs.rust_cache }}
+          cache-on-failure: 'false'
+          cache-key: ${{ matrix.os }}-${{ github.event_name }}-${{ github.ref_name }}
+      - name: Build wheels
+        uses: pypa/cibuildwheel@8d2b08b68458a16aeb24b64e68a09ab1c8e82084 # v3.4.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: ./wheelhouse/*.whl
+          name: pypi-wheels-${{ matrix.os }}
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: 'false'
+      - name: Build sdist
+        run: pipx run build --sdist
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pypi-sdist
+          path: dist/*.tar.gz
