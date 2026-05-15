@@ -11,8 +11,8 @@ repository = "https://github.com/napari/bermuda.git"
 
 [workspace.dependencies]
 triangulation = { path = "crates/triangulation" }
-pyo3 = { version = "0.26.0", features = ["extension-module"] }
-numpy = "0.26.0"
+pyo3 = { version = "0.28.1", features = ["extension-module"] }
+numpy = "0.28.0"
 rstest = "0.26.1"
 
 

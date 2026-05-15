@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 from bermuda import (
@@ -626,3 +628,14 @@ def country_with_hole():
         ],
         dtype=np.float32,
     )
+
+
+@pytest.mark.parametrize('data_file', Path(__file__).parent.glob('data/*.npz'))
+def test_triangulate_from_data(data_file: Path):
+    data = np.load(data_file)
+    assert 'data' in data
+    polygon = data['data']
+    (edge_centers, edge_offsets, _edge_triangles) = triangulate_path_edge(
+        polygon, closed=True
+    )
+    assert len(edge_centers) == len(edge_offsets)
