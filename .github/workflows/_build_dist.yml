@@ -30,8 +30,9 @@ jobs:
           cache-key: ${{ matrix.os }}-${{ github.event_name }}-${{ github.ref_name }}
       - name: win_arm64 - set environment variables
         if: ${{ matrix.os == 'windows-11-arm' }}
+        shell: pwsh
         run: |
-          echo "C:\Program Files\LLVM\bin" >> $env:GIHUB_PATH
+          echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
           echo "CC=clang-cl" >> $env:GITHUB_ENV
           echo "CXX=clang-cl" >> $env:GITHUB_ENV
           echo "FC=flang" >> $env:GITHUB_ENV
