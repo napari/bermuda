@@ -45,7 +45,6 @@ fn add_triangles_for_join(
     bevel: bool,
 ) -> f32 {
     let idx = triangles.offsets.len();
-    let mitter: point::Vector;
     let length = point::vector_length(p2, p3);
     let p1_p2_diff_norm = (p2 - p1) / prev_length;
     let p2_p3_diff_norm = (p3 - p2) / length;
@@ -57,8 +56,8 @@ fn add_triangles_for_join(
     triangles.centers.push(p2);
 
     // Check sin_angle to compute mitter vector
-    if sin_angle == 0.0 {
-        mitter = point::Vector::new(p1_p2_diff_norm.y / 2.0, -p1_p2_diff_norm.x / 2.0);
+    let mitter = if sin_angle == 0.0 {
+        point::Vector::new(p1_p2_diff_norm.y / 2.0, -p1_p2_diff_norm.x / 2.0)
     } else {
         let mut scale_factor = 1.0 / sin_angle;
         if bevel || cos_angle < cos_limit {
@@ -66,8 +65,8 @@ fn add_triangles_for_join(
             let (sign, mag) = sign_abs(scale_factor);
             scale_factor = sign * 0.5 * mag.min(prev_length.min(length));
         }
-        mitter = (p1_p2_diff_norm - p2_p3_diff_norm) * scale_factor * 0.5;
-    }
+        (p1_p2_diff_norm - p2_p3_diff_norm) * scale_factor * 0.5
+    };
 
     if bevel || cos_angle < cos_limit {
         triangles.centers.push(p2);
