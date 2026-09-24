@@ -68,3 +68,20 @@ fn test_hole_triangulation_194() {
         .iter()
         .all(|t| t.x < point_count && t.y < point_count && t.z < point_count));
 }
+
+/// Check if edges used to connect holes with the outer boundary are removed
+/// (input edges 545-546 / 556-557 and 557-558 / 568-569)
+#[rstest]
+fn test_hole_triangulation_194_bridges_removed() {
+    let mut polygon = parse_points(POLYGON_DATA);
+    polygon.dedup();
+
+    let (_new_polygons, segments) = split_polygons_on_repeated_edges(&[polygon]);
+
+    let bridge_start = Point::new(20290.68, 24049.502);
+    let edges_at_bridge_start = segments
+        .iter()
+        .filter(|s| s.top == bridge_start || s.bottom == bridge_start)
+        .count();
+    assert_eq!(edges_at_bridge_start, 2);
+}

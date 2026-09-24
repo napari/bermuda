@@ -255,6 +255,11 @@ pub enum Intersection {
 ///
 /// ```
 pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersection {
+    // To reduce problem with float precision calculation, same pair of segments
+    // Should be calculated in same order.
+    if s2 < s1 {
+        return find_intersection(s2, s1);
+    }
     let a1 = s1.top.y - s1.bottom.y;
     let b1 = s1.bottom.x - s1.top.x;
     let a2 = s2.top.y - s2.bottom.y;
