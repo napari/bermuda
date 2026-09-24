@@ -407,8 +407,9 @@ pub enum Orientation {
 ///
 /// ```
 pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
-    let val1 = (q.y - p.y) * (r.x - q.x);
-    let val2 = (r.y - q.y) * (q.x - p.x);
+    // enforce f64 for better calculation accuracy
+    let val1 = (q.y as f64 - p.y as f64) * (r.x as f64 - q.x as f64);
+    let val2 = (r.y as f64 - q.y as f64) * (q.x as f64 - p.x as f64);
     if val1 == val2 {
         Orientation::Collinear
     } else if val1 > val2 {
