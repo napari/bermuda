@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::Hash;
 
-const EPSILON: f32 = 1e-6;
+const EPSILON: f64 = 1e-6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Event {
@@ -255,10 +255,19 @@ pub enum Intersection {
 ///
 /// ```
 pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersection {
-    let a1 = s1.top.y - s1.bottom.y;
-    let b1 = s1.bottom.x - s1.top.x;
-    let a2 = s2.top.y - s2.bottom.y;
-    let b2 = s2.bottom.x - s2.top.x;
+    // To reduce problem with float precision calculation, same pair of segments
+    // Should be calculated in same order.
+    if s2 < s1 {
+        return find_intersection(s2, s1);
+    }
+
+    let s1_ = s1.as_f64();
+    let s2_ = s2.as_f64();
+
+    let a1 = s1_.top.y - s1_.bottom.y;
+    let b1 = s1_.bottom.x - s1_.top.x;
+    let a2 = s2_.top.y - s2_.bottom.y;
+    let b2 = s2_.bottom.x - s2_.top.x;
     let det = a1 * b2 - a2 * b1;
 
     if det == 0.0 {
@@ -289,8 +298,8 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
         return Intersection::CollinearWithOverlap((res[0], res[1]));
     }
 
-    let t = ((s2.top.x - s1.top.x) * (s2.bottom.y - s2.top.y)
-        - (s2.top.y - s1.top.y) * (s2.bottom.x - s2.top.x))
+    let t = ((s2_.top.x - s1_.top.x) * (s2_.bottom.y - s2_.top.y)
+        - (s2_.top.y - s1_.top.y) * (s2_.bottom.x - s2_.top.x))
         / det;
 
     // clip to handle problems with floating point precision
@@ -309,8 +318,8 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
         };
     }
 
-    let x = s1.top.x + t * b1;
-    let y = s1.top.y + t * (-a1);
+    let x = s1.top.x + (t * b1) as f32;
+    let y = s1.top.y + (t * (-a1)) as f32;
     Intersection::PointIntersection(point::Point { x, y })
 }
 
