@@ -318,8 +318,8 @@ pub fn find_intersection(s1: &point::Segment, s2: &point::Segment) -> Intersecti
         };
     }
 
-    let x = s1.top.x + (t * b1) as f32;
-    let y = s1.top.y + (t * (-a1)) as f32;
+    let x = (s1_.top.x + t * b1) as f32;
+    let y = (s1_.top.y + (t * (-a1))) as f32;
     Intersection::PointIntersection(point::Point { x, y })
 }
 
