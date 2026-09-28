@@ -4,12 +4,19 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 pub(crate) type Coord = f32;
+pub(crate) type Coord64 = f64;
 pub(crate) type Index = usize;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
     pub x: Coord,
     pub y: Coord,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Point64 {
+    pub x: Coord64,
+    pub y: Coord64,
 }
 
 impl Point {
@@ -39,6 +46,19 @@ impl Point {
             x: self.x + vector.x,
             y: self.y + vector.y,
         }
+    }
+
+    pub fn as_f64(&self) -> Point64 {
+        Point64::new_f32(self.x, self.y)
+    }
+}
+
+impl Point64 {
+    pub const fn new(x: Coord64, y: Coord64) -> Self {
+        Self { x, y }
+    }
+    pub const fn new_f32(x: Coord, y: Coord) -> Self {
+        Self::new(x as f64, y as f64)
     }
 }
 
@@ -173,6 +193,12 @@ pub struct Segment {
     pub bottom: Point,
 }
 
+#[derive(Debug, Clone)]
+pub struct Segment64 {
+    pub top: Point64,
+    pub bottom: Point64,
+}
+
 impl Segment {
     pub fn new(p1: Point, p2: Point) -> Self {
         if p1 == p2 {
@@ -238,6 +264,13 @@ impl Segment {
 
         let x_coord = self.point_on_line_x(p.y);
         self.bottom.x <= x_coord && x_coord <= self.top.x
+    }
+
+    pub fn as_f64(&self) -> Segment64 {
+        Segment64 {
+            bottom: self.bottom.as_f64(),
+            top: self.top.as_f64(),
+        }
     }
 }
 
@@ -407,8 +440,9 @@ pub enum Orientation {
 ///
 /// ```
 pub const fn orientation(p: Point, q: Point, r: Point) -> Orientation {
-    let val1 = (q.y - p.y) * (r.x - q.x);
-    let val2 = (r.y - q.y) * (q.x - p.x);
+    // enforce f64 for better calculation accuracy
+    let val1 = (q.y as f64 - p.y as f64) * (r.x as f64 - q.x as f64);
+    let val2 = (r.y as f64 - q.y as f64) * (q.x as f64 - p.x as f64);
     if val1 == val2 {
         Orientation::Collinear
     } else if val1 > val2 {

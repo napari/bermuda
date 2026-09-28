@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 from bermuda import (
@@ -7,6 +9,8 @@ from bermuda import (
     triangulate_polygons_face_3d,
     triangulate_polygons_with_edge,
 )
+
+DATA_DIR = Path(__file__).parent / 'data'
 
 
 @pytest.mark.parametrize(
@@ -626,3 +630,15 @@ def country_with_hole():
         ],
         dtype=np.float32,
     )
+
+
+def test_hole_triangulation_194():
+    vertices = np.loadtxt(
+        DATA_DIR / 'create_holes_triangulation_failure.txt',
+        dtype=np.float32,
+    )
+
+    assert vertices.shape == (570, 2)
+    assert np.isfinite(vertices).all()
+
+    triangulate_polygons_face([vertices])
